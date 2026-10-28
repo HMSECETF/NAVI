@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>현대차증권 NAVI v6.0 | 타점 내비게이터 & Personal Investment Agent</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-deep: #060b16;
+      --card-dark: #0f172a;
+      --kr-up: #ef4444;
+      --kr-down: #3b82f6;
+      --cyan-accent: #38bdf8;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #030712;
+      color: #f8fafc;
+      margin: 0; padding: 0;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh;
+    }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    .device-frame {
+      width: 100%; max-width: 430px;
+      height: 920px; max-height: 100vh;
+      background: #080e1e;
+      position: relative; overflow: hidden;
+      display: flex; flex-direction: column;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.9), 0 0 0 10px #1e293b, 0 0 45px rgba(56, 189, 248, 0.18);
+      transition: background 0.3s ease;
+    }
+    @media (max-width: 480px) {
+      .device-frame { max-width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; }
+    }
+
+    /* 실버 에이전트 모드 (100세 시대 고령층 친화 고대비 & 큰글씨 테마) */
+    body.silver-mode .device-frame {
+      background: #0b1528;
+      border-color: #f59e0b;
+    }
+    body.silver-mode { font-size: 110%; }
+    body.silver-mode .silver-highlight {
+      border: 2px solid #f59e0b !important;
+      box-shadow: 0 8px 25px rgba(245, 158, 11, 0.2);
+    }
+
+    .glass-card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.96) 0%, rgba(10, 17, 34, 0.98) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: 18px;
+    }
+    .glass-card-active {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.98) 0%, rgba(23, 37, 84, 0.92) 100%);
+      border: 1.5px solid #38bdf8;
+      box-shadow: 0 8px 25px rgba(2, 132, 199, 0.22);
+      border-radius: 18px;
+    }
+
+    .center-modal {
+      position: absolute; inset: 0;
+      background: rgba(3, 7, 18, 0.86);
+      backdrop-filter: blur(6px);
+      z-index: 80; display: none;
+      align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .center-modal.open { display: flex; }
+
+    /* 숫자 입력창 화살표 정리 */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      opacity: 1;
+    }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="device-frame rounded-[42px]">
+    
+    <!-- ================= 상단 헤더 (상시 실시간 시세 연동 + 실버모드 & 설정) ================= -->
+    <header class="bg-slate-950/95 border-b border-slate-800 px-3.5 py-2.5 shrink-0 z-40">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-xs font-black text-white shadow">
+            N
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-black text-sm tracking-tight text-white">현대차증권 NAVI</span>
+              <span class="flex items-center gap-1 text-[9.5px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> 실시간 타점연동
+              </span>
+            </div>
+            <div id="headerSubStatus" class="text-[10px] text-slate-400 truncate max-w-[205px]">
+              타점 내비게이터 가동중 · 오토파일럿 대기
+            </div>
+          </div>
+        </div>
+
+        <!-- 우측: 100세 시대 실버모드 토글 & 오토파일럿 설정 아이콘 -->
+        <div class="flex items-center gap-1.5">
+          <button onclick="toggleSilverMode()" id="btnSilverMode" class="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10.5px] font-extrabold flex items-center gap-1 transition">
+            <i class="fa-solid fa-glasses"></i> <span id="silverBtnLabel">실버모드</span>
+          </button>
+          <button onclick="switchTab('autopilot')" class="p-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-[11px]" title="오토파일럿 및 타점 설정">
+            <i class="fa-solid fa-sliders"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ================= 실시간 에이전트 알림 배너 ================= -->
+    <div id="agentToastBanner" class="hidden absolute top-16 left-3 right-3 z-50 bg-slate-900/98 backdrop-blur-md text-white p-3.5 rounded-2xl border-2 border-cyan-400 shadow-2xl">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-[10px] font-extrabold text-cyan-300" id="toastCategory">⚡ NAVI TIMING & ACTION AGENT</span>
+        <button onclick="closeToastBanner()" class="text-slate-400 hover:text-white text-xs">✕</button>
+      </div>
+      <div class="text-xs font-extrabold text-white mb-0.5" id="toastTitle">알림 제목</div>
+      <div class="text-[11px] text-slate-300 leading-snug" id="toastDesc">알림 내용</div>
+    </div>
+
+    <!-- ================= 메인 워크스페이스 뷰포트 ================= -->
+    <main class="flex-1 overflow-y-auto pb-20 px-3 pt-3 space-y-3">
+
+      <!-- =========================================================================
+           TAB 1: 🎯 타점 홈 (결정 장애를 없애주는 3색 신호등 타점 브리핑 & 관심종목)
+           ========================================================================= -->
+      <section id="tab-home" class="tab-view space-y-3">
+        
+        <!-- 100세 시대 실버모드 활성화 시 최상단에 뜨는 전용 케어 대시보드 -->
+        <div id="silverCareHeroBanner" class="hidden glass-card silver-highlight p-3.5 space-y-2.5 bg-gradient-to-br from-amber-950/60 to-slate-900">
+          <div class="flex justify-between items-center border-b border-amber-500/30 pb-2">
+            <span class="text-xs font-black text-amber-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-heart-shield"></i> 100세 시대 실버 안심 에이전트 가동중
+            </span>
+            <button onclick="speakSilverBriefing()" class="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-[10.5px] flex items-center gap-1 shadow">
+              <i class="fa-solid fa-volume-high"></i> 소리로 타점 듣기
+            </button>
+          </div>
+          <p class="text-xs text-amber-100 leading-relaxed" id="silverEasySummaryText">
+            “어르신, 오늘 계좌는 <strong>+61,500원 수익 중</strong>으로 아주 건강합니다. 관심 두신 <strong>DB하이텍</strong>은 지금이 <strong>🟢 들어가기 좋은 타이밍</strong>이며, 어려우신 손절·익절 가격도 제가 미리 맞춰두었습니다.”
+          </p>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="switchTab('silver')" class="py-2 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-200 font-bold text-[11px]">
+              🏥 건보료 2,000만원 방어 점검
+            </button>
+            <button onclick="switchTab('silver')" class="py-2 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 font-bold text-[11px]">
+              💰 매월 150만원 생활비 설계
+            </button>
+          </div>
+        </div>
+
+        <!-- 내 계좌 & 실시간 방어 현황 -->
+        <div class="glass-card p-3.5">
+          <div class="flex justify-between items-center mb-1.5">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[11px] font-bold text-slate-400">운용계좌</span>
+              <select id="accountSelector" onchange="handleAccountChange(this.value)" class="bg-slate-800 text-cyan-300 text-[10.5px] font-bold px-2 py-0.5 rounded border border-slate-700">
+                <option value="cma">일반위탁 (CMA)</option>
+                <option value="isa">중개형 ISA (비과세·절세)</option>
+                <option value="irp">퇴직연금 IRP (안전자산30%)</option>
+              </select>
+            </div>
+            <span id="autopilotBadgeHome" onclick="switchTab('autopilot')" class="cursor-pointer text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-bold">
+              🤖 오토파일럿: 대기중 (설정 ➔)
+            </span>
+          </div>
+
+          <div class="flex justify-between items-baseline">
+            <div>
+              <div id="homeTotalAsset" class="text-2xl font-black font-mono text-white">4,766,300원</div>
+              <div class="text-[11px] text-slate-400">
+                주문가능 예수금: <strong id="homeCash" class="text-cyan-300 font-mono">1,500,000원</strong>
+              </div>
+            </div>
+            <div class="text-right">
+              <div id="homeTotalProfit" class="text-sm font-bold font-mono text-red-400">+61,500원 (+1.92%)</div>
+              <div class="text-[10px] text-slate-400">보유종목 타점감시: <strong class="text-emerald-400">실시간 작동</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ★ 핵심 기획: 투자 판단 지연을 끝내는 '오늘의 타점 신호등 카드' -->
+        <div class="glass-card-active p-3.5 space-y-2.5">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-extrabold text-cyan-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-traffic-light"></i> NAVI 실시간 타점 내비게이터 (결정장애 해결)
+            </span>
+            <span class="text-[10px] text-slate-400">추세추종 기술적 분석 기준</span>
+          </div>
+
+          <p class="text-[11px] text-slate-300 leading-snug">
+            “정보가 너무 많아 언제 들어가고 나올지 망설여지시나요? NAVI가 <strong>지금 당장 사야 할 타점(🟢)</strong>과 <strong>기다려야 할 타점(🟡)</strong>, <strong>나와야 할 타점(🔴)</strong>을 딱 집어드립니다.”
+          </p>
+
+          <!-- 3색 신호등 요약 그리드 -->
+          <div class="grid grid-cols-3 gap-1.5 text-center text-[10.5px]">
+            <div onclick="openStockTimingDetail('DB하이텍')" class="p-2 rounded-xl bg-emerald-950/70 border border-emerald-500/50 cursor-pointer hover:bg-emerald-900/70 transition">
+              <span class="text-emerald-300 font-black block">🟢 진입 타점</span>
+              <strong class="text-white text-xs block mt-0.5">DB하이텍</strong>
+              <span class="text-[9.5px] text-emerald-200">20일선 반등확정</span>
+            </div>
+            <div onclick="openStockTimingDetail('삼성전자')" class="p-2 rounded-xl bg-amber-950/70 border border-amber-500/50 cursor-pointer hover:bg-amber-900/70 transition">
+              <span class="text-amber-300 font-black block">🟡 대기·손절유의</span>
+              <strong class="text-white text-xs block mt-0.5">삼성전자</strong>
+              <span class="text-[9.5px] text-amber-200">20일선 회복대기</span>
+            </div>
+            <div onclick="openStockTimingDetail('티에스이')" class="p-2 rounded-xl bg-rose-950/70 border border-rose-500/50 cursor-pointer hover:bg-rose-900/70 transition">
+              <span class="text-rose-300 font-black block">🔴 추격금지·익절</span>
+              <strong class="text-white text-xs block mt-0.5">티에스이</strong>
+              <span class="text-[9.5px] text-rose-200">RSI 78 과열구간</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 내 보유종목 실시간 진입·손절매·수익매 타점 현황 -->
+        <div class="glass-card p-3.5 space-y-2">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <strong class="text-xs font-extrabold text-white">💼 내 보유종목 실시간 나오는 시점 (손절매·수익매)</strong>
+            <span class="text-[10px] text-cyan-400">클릭 시 타점 숫자 직접 수정</span>
+          </div>
+          <div id="homeHoldingsTimingList" class="space-y-2"></div>
+        </div>
+
+        <!-- 평소 관심있는 종목: 들어가는 시점(진입 타점) 실시간 판독 리스트 -->
+        <div class="glass-card p-3.5 space-y-2">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <div>
+              <strong class="text-xs font-extrabold text-white">📌 관심종목 들어가는 시점 (진입 타점 레이더)</strong>
+              <p class="text-[10px] text-slate-400">언제 살지 고민되던 종목의 정확한 진입가·손절매·수익매를 읽어줍니다</p>
+            </div>
+            <button onclick="openAddWatchlistModal()" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10.5px] font-bold shrink-0">
+              + 종목추가
+            </button>
+          </div>
+          <div id="homeWatchlistTimingList" class="divide-y divide-slate-800/80"></div>
+        </div>
+
+      </section>
+
+      <!-- =========================================================================
+           TAB 2: 📈 타점 내비게이터 (기술적 분석 + 손절매·수익매 숫자 직접 기입!)
+           ========================================================================= -->
+      <section id="tab-navigator" class="tab-view hidden space-y-3">
+        
+        <!-- 종목 선택 & 신호등 타점 판정 헤더 -->
+        <div class="glass-card p-3.5 space-y-2.5">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <select id="navStockSelect" onchange="selectNavStock(this.value)" class="bg-slate-900 text-white font-extrabold text-sm px-2.5 py-1.5 rounded-xl border border-cyan-500/50">
+                <!-- JS Populated -->
+              </select>
+              <span id="navTrafficLightBadge" class="text-[10.5px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-extrabold">
+                🟢 지금 진입 타점
+              </span>
+            </div>
+            <div class="text-right">
+              <div id="navCurrentPrice" class="text-base font-black font-mono text-red-400">131,700원</div>
+              <div id="navCurrentChange" class="text-[10.5px] font-bold font-mono text-red-400">+4.44% ▲</div>
+            </div>
+          </div>
+
+          <!-- 개인화 투자판단 렌즈 선택 (기본 디폴트 = Basic 추세추종) -->
+          <div class="grid grid-cols-4 gap-1 text-[10px]">
+            <button onclick="setTimingLens('trend')" id="lensBtn-trend" class="py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-extrabold">
+              Basic 추세추종
+            </button>
+            <button onclick="setTimingLens('pullback')" id="lensBtn-pullback" class="py-1.5 rounded-lg bg-slate-800 text-slate-300 font-bold">
+              20일선 눌림목
+            </button>
+            <button onclick="setTimingLens('breakout')" id="lensBtn-breakout" class="py-1.5 rounded-lg bg-slate-800 text-slate-300 font-bold">
+              전고점 수급돌파
+            </button>
+            <button onclick="setTimingLens('income')" id="lensBtn-income" class="py-1.5 rounded-lg bg-slate-800 text-slate-300 font-bold">
+              배당·안정인컴
+            </button>
+          </div>
+        </div>
+
+        <!-- ★ AI가 읽어주는 들어가는 시점 / 나오는 시점 명확 브리핑 -->
+        <div class="glass-card p-3.5 space-y-2 border-l-4 border-l-cyan-400">
+          <div class="flex justify-between items-center">
+            <strong class="text-xs font-extrabold text-cyan-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-bullhorn"></i> NAVI 타점 도슨트 (언제 들어가고 언제 나올까?)
+            </strong>
+            <button onclick="speakCurrentStockTiming()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-0.5 rounded-lg border border-slate-700 font-bold flex items-center gap-1">
+              <i class="fa-solid fa-volume-high"></i> 음성낭독
+            </button>
+          </div>
+          <div id="navDocentText" class="text-xs text-slate-200 leading-relaxed"></div>
+        </div>
+
+        <!-- 실시간 기술적 분석 차트 (사용자 설정 손절매·수익매 라인 실시간 반영) -->
+        <div class="glass-card p-3 space-y-2">
+          <div class="flex justify-between items-center text-[10.5px]">
+            <span class="text-slate-300 font-bold">📊 기술적 타점 차트 (이평선 정배열 & 손절매·수익매 밴드)</span>
+            <span id="navRRBadge" class="text-cyan-300 font-mono font-bold">손익비 1 : 2.40</span>
+          </div>
+          <div class="w-full h-52 bg-slate-950 rounded-xl border border-slate-800 p-1.5 relative overflow-hidden">
+            <svg id="navSvgChart" class="w-full h-full" viewBox="0 0 380 190"></svg>
+          </div>
+          <!-- 기술적 지표 요약 바 -->
+          <div id="navTechIndicatorsBar" class="grid grid-cols-4 gap-1 text-center text-[10px] bg-slate-950 p-2 rounded-xl border border-slate-800"></div>
+        </div>
+
+        <!-- ★★★ 피드백 핵심 반영: 손절매(Stop-Loss) & 수익매(Take-Profit) 사용자 직접 숫자 기입 패널 ★★★ -->
+        <div class="glass-card-active p-3.5 space-y-3">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <div>
+              <h4 class="text-xs font-extrabold text-white flex items-center gap-1.5">
+                <i class="fa-solid fa-pen-to-square text-cyan-400"></i> 내 입맛대로 손절매 · 수익매 구간 직접 기입
+              </h4>
+              <p class="text-[10px] text-slate-400">비율(%)이나 원하는 가격(원)을 직접 숫자로 입력하면 차트와 오토파일럿에 즉시 반영됩니다</p>
+            </div>
+            <button onclick="resetToAiRecommendedTargets()" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[10px] font-bold border border-slate-700 shrink-0">
+              AI 추천타점 복원
+            </button>
+          </div>
+
+          <!-- 1. 손절매(Stop-Loss) 직접 숫자 기입 -->
+          <div class="p-2.5 bg-rose-950/30 rounded-xl border border-rose-500/40 space-y-1.5">
+            <div class="flex justify-between items-center text-[11px]">
+              <strong class="text-rose-300">🛡️ 손절매 (나오는 시점 - 하단 방어선)</strong>
+              <span class="text-[10px] text-rose-200 font-mono" id="stopLossExpectedAmt">1주당 -6,585원 리스크</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[9.5px] text-slate-400 block mb-0.5">손절매 비율 (%) 직접 입력</label>
+                <div class="flex items-center bg-slate-950 rounded-lg border border-rose-500/50 px-2 py-1">
+                  <span class="text-rose-400 font-bold text-xs mr-1">-</span>
+                  <input type="number" id="inputStopPct" value="5.0" min="0.5" max="30" step="0.5" oninput="onUserEditStopPct(this.value)" class="w-full bg-transparent text-white font-mono font-bold text-xs focus:outline-none">
+                  <span class="text-slate-400 text-xs">%</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-[9.5px] text-slate-400 block mb-0.5">손절매 가격 (원) 직접 입력</label>
+                <div class="flex items-center bg-slate-950 rounded-lg border border-rose-500/50 px-2 py-1">
+                  <input type="number" id="inputStopPrice" value="125100" step="100" oninput="onUserEditStopPrice(this.value)" class="w-full bg-transparent text-rose-300 font-mono font-bold text-xs focus:outline-none">
+                  <span class="text-slate-400 text-xs ml-1">원</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. 수익매(Take-Profit / 목표 익절) 직접 숫자 기입 -->
+          <div class="p-2.5 bg-emerald-950/30 rounded-xl border border-emerald-500/40 space-y-1.5">
+            <div class="flex justify-between items-center text-[11px]">
+              <strong class="text-emerald-300">🎯 수익매 (나오는 시점 - 상단 목표익절선)</strong>
+              <span class="text-[10px] text-emerald-200 font-mono" id="takeProfitExpectedAmt">1주당 +15,804원 기대수익</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-[9.5px] text-slate-400 block mb-0.5">수익매 목표비율 (%) 직접 입력</label>
+                <div class="flex items-center bg-slate-950 rounded-lg border border-emerald-500/50 px-2 py-1">
+                  <span class="text-emerald-400 font-bold text-xs mr-1">+</span>
+                  <input type="number" id="inputTargetPct" value="12.0" min="1.0" max="100" step="0.5" oninput="onUserEditTargetPct(this.value)" class="w-full bg-transparent text-white font-mono font-bold text-xs focus:outline-none">
+                  <span class="text-slate-400 text-xs">%</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-[9.5px] text-slate-400 block mb-0.5">수익매 목표가격 (원) 직접 입력</label>
+                <div class="flex items-center bg-slate-950 rounded-lg border border-emerald-500/50 px-2 py-1">
+                  <input type="number" id="inputTargetPrice" value="147500" step="100" oninput="onUserEditTargetPrice(this.value)" class="w-full bg-transparent text-emerald-300 font-mono font-bold text-xs focus:outline-none">
+                  <span class="text-slate-400 text-xs ml-1">원</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 주문 금액 직접 기입 & 원클릭 타점 주문 -->
+          <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+            <div class="flex justify-between items-center text-[11px]">
+              <span class="text-slate-300 font-bold">투자할 금액 (또는 AI 1.5% 리스크 권장수량)</span>
+              <span id="orderCalcQtyText" class="text-cyan-300 font-mono font-extrabold">7주 (921,900원)</span>
+            </div>
+            <div class="flex gap-2">
+              <input type="number" id="inputOrderBudget" value="1000000" step="100000" oninput="recalcOrderQtyFromBudget()" class="flex-1 bg-slate-900 text-white font-mono font-bold text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-cyan-400">
+              <button onclick="applyOnePercentRiskSizing()" class="px-2.5 py-2 rounded-xl bg-indigo-950 text-indigo-300 border border-indigo-500/40 text-[10px] font-bold shrink-0">
+                1.5% 리스크 자동계산
+              </button>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button onclick="executeTimingOrderWithBrackets()" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-extrabold shadow-lg">
+              ⚡ 진입 주문 + 내 손절매·수익매 오토파일럿 동시 등록
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- =========================================================================
+           TAB 3: ⚙️ 오토파일럿·설정 (내가 투자에 손을 댈 수 없을 때 대신 집행하는 대리인)
+           ========================================================================= -->
+      <section id="tab-autopilot" class="tab-view hidden space-y-3">
+        
+        <div class="glass-card-active p-4 space-y-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold">
+                Hands-Free Autonomous Execution
+              </span>
+              <h3 class="text-sm font-black text-white mt-1.5">🤖 NAVI 핸즈프리 오토파일럿 설정</h3>
+              <p class="text-[11px] text-slate-300 mt-0.5 leading-snug">
+                업무·회의 중이든, 잠들었을 때든, 여행 중이든 <strong>내가 호가창에 손을 댈 수 없을 때 내가 기입한 손절매·수익매·진입 타점 그대로 알아서 매매를 대행</strong>합니다.
+              </p>
+            </div>
+            <button onclick="toggleMasterAutopilot()" id="btnMasterAutopilot" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 text-xs font-black shrink-0">
+              OFF
+            </button>
+          </div>
+
+          <!-- 부재 상황 프리셋 선택 -->
+          <div class="grid grid-cols-3 gap-1.5 text-[10.5px]">
+            <button onclick="selectAutopilotPreset('work')" id="presetBtn-work" class="p-2 rounded-xl bg-cyan-500/20 border border-cyan-400 text-cyan-200 font-bold text-center">
+              💼 업무·회의 집중<br><span class="text-[9px] text-slate-300">장중 타점 자동집행</span>
+            </button>
+            <button onclick="selectAutopilotPreset('sleep')" id="presetBtn-sleep" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 font-bold text-center">
+              🌙 수면·야간 방어<br><span class="text-[9px] text-slate-500">미국장·시초가 가드</span>
+            </button>
+            <button onclick="selectAutopilotPreset('away')" id="presetBtn-away" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 font-bold text-center">
+              ✈️ 장기 부재·여행<br><span class="text-[9px] text-slate-500">칼손절·돌파매수 위임</span>
+            </button>
+          </div>
+
+          <!-- 오토파일럿 전역 손절매·수익매·1회 한도 직접 숫자 기입 -->
+          <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2.5 text-xs">
+            <div class="text-[11px] font-extrabold text-cyan-300 border-b border-slate-800 pb-1.5">
+              ✏️ 오토파일럿 기본 손절매 · 수익매 · 매수한도 직접 기입
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="text-[9.5px] text-slate-400 block mb-1">기본 손절매 (%)</label>
+                <div class="flex items-center bg-slate-900 rounded-lg border border-slate-700 px-2 py-1.5">
+                  <span class="text-rose-400 font-bold mr-0.5">-</span>
+                  <input type="number" id="apGlobalStopPct" value="5.0" step="0.5" oninput="updateGlobalAutopilotParams()" class="w-full bg-transparent text-white font-mono font-bold text-xs focus:outline-none">
+                  <span class="text-slate-400 text-[10px]">%</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-[9.5px] text-slate-400 block mb-1">기본 수익매 (%)</label>
+                <div class="flex items-center bg-slate-900 rounded-lg border border-slate-700 px-2 py-1.5">
+                  <span class="text-emerald-400 font-bold mr-0.5">+</span>
+                  <input type="number" id="apGlobalTargetPct" value="12.0" step="0.5" oninput="updateGlobalAutopilotParams()" class="w-full bg-transparent text-white font-mono font-bold text-xs focus:outline-none">
+                  <span class="text-slate-400 text-[10px]">%</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-[9.5px] text-slate-400 block mb-1">1회 자동매수액</label>
+                <div class="flex items-center bg-slate-900 rounded-lg border border-slate-700 px-2 py-1.5">
+                  <input type="number" id="apGlobalMaxBuy" value="600000" step="100000" oninput="updateGlobalAutopilotParams()" class="w-full bg-transparent text-cyan-300 font-mono font-bold text-[11px] focus:outline-none">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 오토파일럿 실제 작동 검증 시뮬레이터 버튼 -->
+          <div class="space-y-1.5 pt-1">
+            <div class="text-[10.5px] font-bold text-slate-300">⚡ 오토파일럿 대리 집행 즉시 테스트 (실제 잔고 연동)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button onclick="simulateAutopilotStopLoss()" class="p-2 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-500/50 text-rose-200 font-bold text-[10.5px] text-center">
+                📉 손절매 도달<br><span class="text-[9px] text-rose-300">자동 손절체결</span>
+              </button>
+              <button onclick="simulateAutopilotTakeProfit()" class="p-2 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-200 font-bold text-[10.5px] text-center">
+                🎯 수익매 도달<br><span class="text-[9px] text-emerald-300">자동 익절체결</span>
+              </button>
+              <button onclick="simulateAutopilotEntryBuy()" class="p-2 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-500/50 text-blue-200 font-bold text-[10.5px] text-center">
+                🟢 진입타점 도달<br><span class="text-[9px] text-blue-300">관심주 자동매수</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 종목별 오토파일럿 타점 감시 리스트 -->
+        <div class="glass-card p-3.5 space-y-2">
+          <strong class="text-xs font-extrabold text-white block border-b border-slate-800 pb-2">
+            📋 종목별 설정된 손절매 · 수익매 · 진입타점 위임 현황
+          </strong>
+          <div id="autopilotRulesList" class="space-y-2 text-xs"></div>
+        </div>
+
+        <!-- 오토파일럿 집행 영수증 & 감사 로그 -->
+        <div class="glass-card p-3.5 space-y-2">
+          <strong class="text-xs font-extrabold text-cyan-300 block border-b border-slate-800 pb-1.5">
+            🧾 오토파일럿 대리 체결 영수증 (Audit Log)
+          </strong>
+          <div id="autopilotLogContainer" class="space-y-2 max-h-56 overflow-y-auto"></div>
+        </div>
+
+      </section>
+
+      <!-- =========================================================================
+           TAB 4: 👵 100세 실버·연금·절세 에이전트 (증권사 독점 킬러 기능)
+           ========================================================================= -->
+      <section id="tab-silver" class="tab-view hidden space-y-3">
+        
+        <!-- 1. 실버 고객 최대 고민: 건강보험료 피부양자 자격(연 금융소득 2,000만 원) 방어 에이전트 -->
+        <div class="glass-card silver-highlight p-4 space-y-2.5">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-black text-amber-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-hospital-user"></i> ① 실버 건보료 피부양자 방어 에이전트 (2,000만원 가드)
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold">
+              한도 86% 도달 주의
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-200 leading-relaxed">
+            100세 시대 은퇴 고객님이 일반계좌에서 이자·배당으로 <strong>연 2,000만 원</strong>을 넘기면 <strong>건강보험 피부양자에서 탈락(월 평균 28만 원 건보료 신규 부과)</strong>하고 금융소득종합과세 대상이 됩니다.
+          </p>
+
+          <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5 text-xs">
+            <div class="flex justify-between">
+              <span class="text-slate-400">올해 누적 과세 배당·이자소득</span>
+              <strong class="text-amber-300 font-mono">17,200,000원 / 20,000,000원</strong>
+            </div>
+            <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+              <div class="bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 h-full" style="width: 86%;"></div>
+            </div>
+            <div class="text-[10.5px] text-cyan-300 pt-1">
+              💡 <strong>NAVI 해결책:</strong> 남은 배당 ETF 매수 주문은 건보료 산정 소득에서 100% 제외되는 <strong>중개형 ISA(비과세/분리과세)</strong> 또는 <strong>연금계좌</strong>로 자동 우회 라우팅합니다!
+            </div>
+          </div>
+
+          <button onclick="activateHealthInsuranceGuard()" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow">
+            🛡️ 건보료 2,000만 원 초과 방지 자동 계좌우회 켜기
+          </button>
+        </div>
+
+        <!-- 2. 매월 25일 은퇴 생활비(월 150만원) 자동 파이프라인 설계기 -->
+        <div class="glass-card p-3.5 space-y-2.5">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-extrabold text-emerald-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-calendar-day"></i> ② 매달 따박따박 ‘은퇴 생활비 캐시플로우’ 설계기
+            </span>
+            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">원금방어 + 월지급</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800">
+              <label class="text-[10px] text-slate-400 block mb-1">희망 월 생활비 수령액 (직접입력)</label>
+              <div class="flex items-center">
+                <input type="number" id="inputSilverMonthlyCash" value="1500000" step="100000" oninput="calcSilverCashflowPlan()" class="w-full bg-transparent text-emerald-300 font-mono font-black text-sm focus:outline-none">
+                <span class="text-slate-400 text-xs">원</span>
+              </div>
+            </div>
+            <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800">
+              <span class="text-[10px] text-slate-400 block mb-1">조합 포트폴리오 (연 4.8% 목표)</span>
+              <strong id="silverRequiredPrincipal" class="text-white font-mono text-xs block">미국배당다우 50% + 국채 50%</strong>
+            </div>
+          </div>
+
+          <button onclick="executeSilverCashflowPortfolio()" class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">
+            ⚡ 매달 생활비 월배당 바스켓 1-Tap 구성하기
+          </button>
+        </div>
+
+        <!-- 3. 실버 사기방지: 카톡 리딩방·급등 테마주 차단 & 가족/PB 안심 가드 -->
+        <div class="glass-card p-3.5 space-y-2.5 border border-rose-500/30">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-extrabold text-rose-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-user-shield"></i> ③ 불법 리딩방·급등 테마주 차단 & 가족 안심 가드
+            </span>
+            <span class="text-[9.5px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded font-bold">실버 보호망 ON</span>
+          </div>
+          <p class="text-[11px] text-slate-300 leading-snug">
+            어르신이 문자·카톡방 추천으로 <strong>단기 급등 과열 종목(RSI 75 이상)이나 투자경고 종목</strong>을 매수하려 할 때, NAVI가 주문을 일시 보류하고 쉬어가기 안내 및 자녀/전담 PB 확인을 연결합니다.
+          </p>
+          <button onclick="openScamGuardDemoModal()" class="w-full py-2 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white text-xs font-bold">
+            🚨 급등주 사기 예방 & 가족 안심 가드 작동 화면 보기
+          </button>
+        </div>
+
+        <!-- 4. 퇴직연금(DC/IRP) 법규 가드 (개별주 차단 & 위험자산 70% 자동 번들) -->
+        <div class="glass-card p-3.5 space-y-2">
+          <span class="text-xs font-extrabold text-cyan-300 block">
+            🏦 ④ 퇴직연금(DC/IRP) 위험자산 70% 한도 자동 짝꿍 주문기
+          </span>
+          <p class="text-[11px] text-slate-300 leading-snug">
+            퇴직연금 계좌에서는 법규상 <strong>개별주식 직접 편입이 불가</strong>하며, 주식형 ETF 매수 시 위험자산 70% 한도를 넘지 않도록 <strong>주식형 ETF 70% + 안전자산(적격 TDF·국채) 30% 묶음 주문</strong>을 자동 생성합니다.
+          </p>
+          <button onclick="executeIrp7030Order()" class="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold">
+            ⚡ IRP 70:30 법규준수 번들 즉시 실행
+          </button>
+        </div>
+
+      </section>
+
+      <!-- =========================================================================
+           TAB 5: 💬 NAVI 대화 (타점 질문·손절매 기입·실버 상담 자연어 실행)
+           ========================================================================= -->
+      <section id="tab-chat" class="tab-view hidden flex flex-col h-[730px] justify-between">
+        <div id="chatStream" class="space-y-3 overflow-y-auto pr-1 pb-3 flex-1">
+          <div class="glass-card p-3.5 text-xs text-slate-200 leading-relaxed">
+            안녕하세요! 종목 정보는 넘쳐나는데 <strong>“정작 언제 들어가고 언제 나와야 할지”</strong> 막막하실 때 타점을 명확히 짚어드리고, 바쁘실 땐 대신 실행까지 해드리는 <strong>현대차증권 에이전트 『NAVI』</strong>입니다.
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="text-[10px] font-bold text-cyan-400">💡 자주 묻는 타점 & 에이전트 명령</div>
+            <button onclick="sendQuickChat('DB하이텍 지금 들어가도 돼? 손절매랑 수익매 가격 찍어줘')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-200">
+              🎯 "DB하이텍 지금 들어가도 돼? 들어가는 시점이랑 손절매·수익매 찍어줘"
+            </button>
+            <button onclick="sendQuickChat('손절매 -4%, 수익매 +15%로 맞추고 바쁠 때 알아서 팔아주게 오토파일럿 켜줘')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-200">
+              ⚙️ "손절매 -4%, 수익매 +15%로 맞추고 오토파일럿 켜줘"
+            </button>
+            <button onclick="sendQuickChat('실버모드로 바꾸고 건보료 피부양자 안 떨어지게 배당주 추천해줘')" class="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-amber-200">
+              👵 "실버모드로 바꾸고 건보료 피부양자 안 떨어지게 배당 설계해줘"
+            </button>
+          </div>
+
+          <div id="chatBubblesArea" class="space-y-3"></div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 flex items-center gap-2 bg-slate-950">
+          <input type="text" id="chatInput" placeholder="예: '로보티즈 타점 읽어줘', '손절매 125000원으로 해줘'" onkeydown="if(event.key==='Enter') handleChatSubmit()" class="flex-1 bg-slate-900 text-white text-xs px-3.5 py-2.5 rounded-full border border-slate-700 focus:outline-none focus:border-cyan-400">
+          <button onclick="handleChatSubmit()" class="w-9 h-9 rounded-full bg-cyan-500 text-slate-950 font-black flex items-center justify-center text-xs">
+            <i class="fa-solid fa-arrow-up"></i>
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ================= 하단 네비게이션 바 ================= -->
+    <nav class="h-16 bg-slate-950 border-t border-slate-800 grid grid-cols-5 text-center text-[10px] text-slate-400 font-bold select-none absolute bottom-0 left-0 right-0 z-40">
+      <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center justify-center text-cyan-400">
+        <i class="fa-solid fa-traffic-light text-base mb-0.5"></i> 타점홈
+      </button>
+      <button onclick="switchTab('navigator')" id="nav-navigator" class="flex flex-col items-center justify-center hover:text-cyan-400">
+        <i class="fa-solid fa-crosshairs text-base mb-0.5"></i> 타점판독기
+      </button>
+      <button onclick="switchTab('autopilot')" id="nav-autopilot" class="flex flex-col items-center justify-center hover:text-cyan-400">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 text-slate-950 flex items-center justify-center -mt-2 shadow-lg font-black">
+          <i class="fa-solid fa-robot text-sm"></i>
+        </div>
+        <span class="text-cyan-300 font-extrabold mt-0.5">오토파일럿</span>
+      </button>
+      <button onclick="switchTab('silver')" id="nav-silver" class="flex flex-col items-center justify-center hover:text-cyan-400">
+        <i class="fa-solid fa-person-cane text-base mb-0.5 text-amber-400"></i> 100세·절세
+      </button>
+      <button onclick="switchTab('chat')" id="nav-chat" class="flex flex-col items-center justify-center hover:text-cyan-400">
+        <i class="fa-solid fa-comments text-base mb-0.5"></i> NAVI챗
+      </button>
+    </nav>
+
+    <!-- ================= 모달 1: 관심종목 추가 ================= -->
+    <div id="addWatchModal" class="center-modal">
+      <div class="w-full max-w-[360px] bg-slate-900 border border-slate-700 rounded-3xl p-4 space-y-3 text-white shadow-2xl">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <h4 class="text-sm font-bold text-cyan-300">➕ 관심종목 추가 & 즉시 타점 판독</h4>
+          <button onclick="closeAddWatchlistModal()" class="text-slate-400 text-xs">✕</button>
+        </div>
+        <div class="space-y-1.5 text-xs">
+          <button onclick="addNewWatchStock('SK하이닉스', '000660', 214000, 3.12, 'green', 2, true, '+215%', 61.5)" class="w-full p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 flex justify-between items-center">
+            <span><strong>SK하이닉스</strong> (🟢 진입 타점)</span>
+            <span class="text-red-400 font-mono font-bold">214,000원 (+3.12%)</span>
+          </button>
+          <button onclick="addNewWatchStock('현대차', '005380', 258000, 2.38, 'green', 2, true, '+180%', 58.0)" class="w-full p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 flex justify-between items-center">
+            <span><strong>현대차</strong> (🟢 진입 타점 · 배당)</span>
+            <span class="text-red-400 font-mono font-bold">258,000원 (+2.38%)</span>
+          </button>
+          <button onclick="addNewWatchStock('한화에어로스페이스', '012450', 385000, 4.05, 'yellow', 2, true, '+165%', 69.5)" class="w-full p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 flex justify-between items-center">
+            <span><strong>한화에어로스페이스</strong> (🟡 눌림목 대기)</span>
+            <span class="text-red-400 font-mono font-bold">385,000원 (+4.05%)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 모달 2: 실버 급등주/리딩방 사기 예방 & 가족 안심 가드 ================= -->
+    <div id="scamGuardModal" class="center-modal">
+      <div class="w-full max-w-[365px] bg-slate-900 border-2 border-amber-400 rounded-3xl p-5 text-center space-y-3 text-white shadow-2xl">
+        <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center mx-auto text-xl">
+          <i class="fa-solid fa-shield-heart"></i>
+        </div>
+        <h4 class="text-base font-black text-amber-300">어르신, 잠깐만 확인해 주세요!</h4>
+        <p class="text-xs text-slate-200 leading-relaxed">
+          선택하신 <strong>[티에스이]</strong>는 최근 단기간에 너무 급격히 올라 <strong>🔴 추격매수 위험(RSI 78.5 과열)</strong> 신호가 켜진 종목입니다.<br><br>
+          혹시 <strong>모르는 문자나 카카오톡 단체방(리딩방)</strong>에서 지금 사라고 추천받으셨다면 고점에 물릴 위험이 매우 큽니다!
+        </p>
+        <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-amber-200">
+          👨‍👩‍👦 등록된 안심 보호자(장남 김진우 님) 또는 현대차증권 전담 PB에게 먼저 안전 여부를 물어보시겠습니까?
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button onclick="sendFamilySafeAlert()" class="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black text-xs">
+            📱 자녀·PB에게 먼저 물어보기
+          </button>
+          <button onclick="closeScamGuardModal()" class="px-3 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">
+            주문 취소
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= APPLICATION CORE JAVASCRIPT ================= -->
+  <script>
+    // 종목별 기술적 분석 & 사용자 커스텀 손절매·수익매 데이터
+    const STOCKS = {
+      'DB하이텍': {
+        code: '000990', type: '국내주식', price: 131700, changePct: 4.44,
+        signal: 'green', // green(지금진입), yellow(눌림목대기), red(추격금지/익절)
+        stage: 2, maAligned: true, ma20Price: 126500, volSpike: '+238%', rsi: 61.4, macd: '골든크로스 양전환',
+        stopPct: 5.0, stopPrice: 125100, targetPct: 12.0, targetPrice: 147500,
+        candles: [119000, 121500, 124000, 126500, 129200, 131700]
+      },
+      '삼성전자': {
+        code: '005930', type: '국내주식', price: 273500, changePct: -1.80,
+        signal: 'yellow',
+        stage: 1, maAligned: false, ma20Price: 279000, volSpike: '-14%', rsi: 41.2, macd: '데드크로스 조정중',
+        stopPct: 4.5, stopPrice: 261200, targetPct: 10.0, targetPrice: 300850,
+        candles: [285000, 282000, 279500, 277000, 275000, 273500]
+      },
+      '로보티즈': {
+        code: '108490', type: '국내주식', price: 306000, changePct: 5.15,
+        signal: 'green',
+        stage: 2, maAligned: true, ma20Price: 294000, volSpike: '+245%', rsi: 63.8, macd: '상승 다이버전스',
+        stopPct: 5.0, stopPrice: 290700, targetPct: 15.0, targetPrice: 351900,
+        candles: [280000, 286000, 291000, 296000, 301000, 306000]
+      },
+      '티에스이': {
+        code: '131290', type: '국내주식', price: 266500, changePct: 9.67,
+        signal: 'red',
+        stage: 3, maAligned: true, ma20Price: 241000, volSpike: '+310%', rsi: 78.5, macd: '과열권 이격과다',
+        stopPct: 6.0, stopPrice: 250500, targetPct: 8.0, targetPrice: 287800,
+        candles: [232000, 240000, 248000, 255000, 261000, 266500]
+      },
+      'KODEX 미국S&P500': {
+        code: '379800', type: '국내상장 해외ETF', price: 23955, changePct: 0.85,
+        signal: 'green',
+        stage: 2, maAligned: true, ma20Price: 23650, volSpike: '+140%', rsi: 57.2, macd: '장기 정배열 상승',
+        stopPct: 3.5, stopPrice: 23115, targetPct: 10.0, targetPrice: 26350,
+        candles: [23350, 23480, 23600, 23720, 23850, 23955]
+      },
+      'TIGER 미국배당다우존스': {
+        code: '458730', type: '연금/배당 ETF', price: 14815, changePct: 0.64,
+        signal: 'green',
+        stage: 2, maAligned: true, ma20Price: 14680, volSpike: '+125%', rsi: 54.5, macd: '배당성장 정배열',
+        stopPct: 3.0, stopPrice: 14370, targetPct: 9.0, targetPrice: 16150,
+        candles: [14520, 14590, 14650, 14710, 14770, 14815]
+      }
+    };
+
+    const state = {
+      activeTab: 'home',
+      selectedStock: 'DB하이텍',
+      lens: 'trend', // trend(Basic 추세추종), pullback(눌림목), breakout(돌파), income(배당)
+      silverMode: false,
+      autopilotOn: false,
+      autopilotPreset: 'work',
+      account: 'cma',
+      cash: 1500000,
+      globalStopPct: 5.0,
+      globalTargetPct: 12.0,
+      globalMaxBuy: 600000,
+      holdings: {
+        'DB하이텍': { qty: 14, avgPrice: 123200 },
+        '삼성전자': { qty: 5, avgPrice: 285000 }
+      },
+      logs: [
+        { time: '14:30:10', tag: '타점판독', color: 'text-cyan-300', title: 'DB하이텍 🟢 지금 진입 타점 판정', desc: '20일선(126,500원) 지지 반등 및 거래량 +238% 돌파 확인' }
+      ]
+    };
+
+    // 효과음 및 음성 합성(TTS)
+    let audioCtx = null;
+    function playBeep(freq = 660) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        g.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+        o.start(); o.stop(audioCtx.currentTime + 0.05);
+      } catch (e) {}
+    }
+
+    function speakText(text) {
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = 'ko-KR';
+          u.rate = state.silverMode ? 0.88 : 0.98;
+          window.speechSynthesis.speak(u);
+        }
+      } catch (e) {}
+    }
+
+    function showBanner(category, title, desc) {
+      playBeep(820);
+      document.getElementById('toastCategory').innerText = category;
+      document.getElementById('toastTitle').innerText = title;
+      document.getElementById('toastDesc').innerText = desc;
+      const b = document.getElementById('agentToastBanner');
+      b.classList.remove('hidden');
+      setTimeout(() => b.classList.add('hidden'), 5000);
+    }
+
+    function closeToastBanner() {
+      document.getElementById('agentToastBanner').classList.add('hidden');
+    }
+
+    function addLog(tag, title, desc, color = 'text-cyan-300') {
+      const time = new Date().toTimeString().split(' ')[0];
+      state.logs.unshift({ time, tag, title, desc, color });
+      renderAutopilotTab();
+    }
+
+    // ★ 상시 실시간 장 연동 (버튼 없이 백그라운드에서 자연스럽게 실시간 틱 작동)
+    function startAlwaysOnRealtimeMarket() {
+      setInterval(() => {
+        Object.entries(STOCKS).forEach(([name, s]) => {
+          const step = s.price > 100000 ? 100 : 15;
+          const move = (Math.random() > 0.48 ? 1 : -1) * step;
+          s.price = Math.max(step * 10, s.price + move);
+          const base = s.candles[0];
+          s.changePct = parseFloat((((s.price - base) / base) * 100).toFixed(2));
+          s.candles[s.candles.length - 1] = s.price;
+        });
+
+        // 현재 열려 있는 화면의 실시간 가격과 손익만 부드럽게 갱신 (사용자가 입력 중인 input은 건드리지 않음)
+        updateLivePricesOnScreen();
+      }, 2400);
+    }
+
+    function updateLivePricesOnScreen() {
+      // 홈 화면 총자산 갱신
+      let stockVal = 0, costVal = 0;
+      Object.entries(state.holdings).forEach(([name, h]) => {
+        if (h.qty > 0 && STOCKS[name]) {
+          stockVal += h.qty * STOCKS[name].price;
+          costVal += h.qty * h.avgPrice;
+        }
+      });
+      const total = stockVal + state.cash;
+      const profit = stockVal - costVal;
+      const pct = costVal > 0 ? ((profit / costVal) * 100).toFixed(2) : '0.00';
+
+      const totalEl = document.getElementById('homeTotalAsset');
+      if (totalEl) totalEl.innerText = `${total.toLocaleString()}원`;
+      const cashEl = document.getElementById('homeCash');
+      if (cashEl) cashEl.innerText = `${state.cash.toLocaleString()}원`;
+      const profEl = document.getElementById('homeTotalProfit');
+      if (profEl) {
+        profEl.innerText = `${profit >= 0 ? '+' : ''}${profit.toLocaleString()}원 (${profit >= 0 ? '+' : ''}${pct}%)`;
+        profEl.className = `text-sm font-bold font-mono ${profit >= 0 ? 'text-red-400' : 'text-blue-400'}`;
+      }
+
+      if (state.activeTab === 'home') {
+        renderHomeLists();
+      } else if (state.activeTab === 'navigator') {
+        const s = STOCKS[state.selectedStock];
+        const pEl = document.getElementById('navCurrentPrice');
+        const cEl = document.getElementById('navCurrentChange');
+        if (pEl && cEl) {
+          pEl.innerText = `${s.price.toLocaleString()}원`;
+          cEl.innerText = `${s.changePct >= 0 ? '+' : ''}${s.changePct}% ${s.changePct >= 0 ? '▲' : '▼'}`;
+        }
+        renderNavSvgChart();
+      }
+    }
+
+    // 탭 전환
+    function switchTab(tabKey) {
+      playBeep();
+      state.activeTab = tabKey;
+      ['home', 'navigator', 'autopilot', 'silver', 'chat'].forEach(k => {
+        document.getElementById(`tab-${k}`).classList.add('hidden');
+        const n = document.getElementById(`nav-${k}`);
+        if (n) { n.classList.remove('text-cyan-400'); n.classList.add('text-slate-400'); }
+      });
+      document.getElementById(`tab-${tabKey}`).classList.remove('hidden');
+      const activeNav = document.getElementById(`nav-${tabKey}`);
+      if (activeNav) { activeNav.classList.add('text-cyan-400'); activeNav.classList.remove('text-slate-400'); }
+
+      if (tabKey === 'home') renderHomeLists();
+      if (tabKey === 'navigator') renderNavigatorTab(true);
+      if (tabKey === 'autopilot') renderAutopilotTab();
+    }
+
+    // ================= 100세 시대 실버 에이전트 모드 =================
+    function toggleSilverMode() {
+      playBeep(740);
+      state.silverMode = !state.silverMode;
+      document.body.classList.toggle('silver-mode', state.silverMode);
+
+      const btn = document.getElementById('btnSilverMode');
+      const lbl = document.getElementById('silverBtnLabel');
+      const hero = document.getElementById('silverCareHeroBanner');
+
+      if (state.silverMode) {
+        btn.className = 'px-2.5 py-1 rounded-xl bg-amber-400 text-slate-950 font-black text-[10.5px] flex items-center gap-1 shadow-lg';
+        lbl.innerText = '실버케어 ON';
+        hero.classList.remove('hidden');
+        speakSilverBriefing();
+        showBanner('👵 100세 시대 실버 에이전트 모드 ON', '쉬운 말 타점 해설 & 건보료·사기방지 가드 활성화', '어려운 기술적 지표를 일상 언어로 바꿔드리고 음성으로 안내합니다.');
+      } else {
+        btn.className = 'px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10.5px] font-extrabold flex items-center gap-1';
+        lbl.innerText = '실버모드';
+        hero.classList.add('hidden');
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      }
+      renderHomeLists();
+      if (state.activeTab === 'navigator') renderNavigatorTab(false);
+    }
+
+    function speakSilverBriefing() {
+      speakText('어르신, 안녕하세요. 오늘 계좌는 6만 천오백 원 수익 중으로 안전합니다. 관심 종목 중 디비하이텍은 지금 사기 좋은 초록불 타이밍이며, 티에스이는 너무 많이 올라 위험하니 추격 매수를 피하세요.');
+    }
+
+    // ================= TAB 1: 홈 리스트 렌더링 =================
+    function getSignalMeta(sig) {
+      if (sig === 'green') return { label: '🟢 지금 진입 타점', cls: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' };
+      if (sig === 'yellow') return { label: '🟡 눌림목 대기', cls: 'bg-amber-500/20 text-amber-300 border border-amber-500/40' };
+      return { label: '🔴 추격금지·익절', cls: 'bg-rose-500/20 text-rose-300 border border-rose-500/40' };
+    }
+
+    function renderHomeLists() {
+      // 1. 보유종목 나오는 시점 리스트
+      const holdEl = document.getElementById('homeHoldingsTimingList');
+      const held = Object.entries(state.holdings).filter(([_, h]) => h.qty > 0);
+      if (held.length === 0) {
+        holdEl.innerHTML = `<div class="text-xs text-slate-500 py-2">현재 보유 중인 종목이 없습니다.</div>`;
+      } else {
+        holdEl.innerHTML = held.map(([name, h]) => {
+          const s = STOCKS[name];
+          const pnlPct = (((s.price - h.avgPrice) / h.avgPrice) * 100).toFixed(2);
+          const isUp = parseFloat(pnlPct) >= 0;
+          return `
+            <div onclick="openStockTimingDetail('${name}')" class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-cyan-400/50 cursor-pointer transition space-y-1.5">
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-1.5">
+                  <strong class="text-xs text-white">${name}</strong>
+                  <span class="text-[10px] text-slate-400 font-mono">${h.qty}주 (평단 ${h.avgPrice.toLocaleString()}원)</span>
+                </div>
+                <span class="text-xs font-mono font-bold ${isUp ? 'text-red-400' : 'text-blue-400'}">
+                  ${s.price.toLocaleString()}원 (${isUp ? '+' : ''}${pnlPct}%)
+                </span>
+              </div>
+              <div class="flex justify-between items-center text-[10.5px] bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800/80">
+                <span class="text-rose-300 font-mono">🛡️ 손절매: <strong>${s.stopPrice.toLocaleString()}원 (-${s.stopPct}%)</strong></span>
+                <span class="text-emerald-300 font-mono">🎯 수익매: <strong>${s.targetPrice.toLocaleString()}원 (+${s.targetPct}%)</strong></span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 2. 관심종목 들어가는 시점 리스트
+      const watchEl = document.getElementById('homeWatchlistTimingList');
+      watchEl.innerHTML = Object.entries(STOCKS).map(([name, s]) => {
+        const meta = getSignalMeta(s.signal);
+        const isUp = s.changePct >= 0;
+        const easyDesc = state.silverMode
+          ? (s.signal === 'green' ? '한 달 평균가 위에서 튼튼하게 오르는 중' : (s.signal === 'yellow' ? '조금 더 싸질 때까지 기다리세요' : '너무 비싸니 절대 따라 사지 마세요'))
+          : `Stage ${s.stage} · 20일선(${s.ma20Price.toLocaleString()}원) · 거래량 ${s.volSpike}`;
+
+        return `
+          <div onclick="openStockTimingDetail('${name}')" class="py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-900/60 px-1 transition">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <strong class="text-xs text-white">${name}</strong>
+                <span class="text-[9.5px] px-2 py-0.5 rounded-full font-extrabold ${meta.cls}">${meta.label}</span>
+              </div>
+              <div class="text-[10.5px] text-slate-400 mt-0.5">${easyDesc}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs font-mono font-bold ${isUp ? 'text-red-400' : 'text-blue-400'}">${s.price.toLocaleString()}원</div>
+              <div class="text-[10px] text-cyan-400 font-bold">타점·손절 설정 ➔</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openStockTimingDetail(stockName) {
+      state.selectedStock = stockName;
+      switchTab('navigator');
+    }
+
+    // ================= TAB 2: 타점 내비게이터 & 손절매·수익매 직접 기입 엔진 =================    function renderNavigatorTab(syncInputs = true) {
+      const sel = document.getElementById('navStockSelect');
+      sel.innerHTML = Object.keys(STOCKS).map(n =>
+        `<option value="${n}" ${n === state.selectedStock ? 'selected' : ''}>${n} (${STOCKS[n].code})</option>`
+      ).join('');
+
+      const sName = state.selectedStock;
+      const s = STOCKS[sName];
+      const meta = getSignalMeta(s.signal);
+
+      const badge = document.getElementById('navTrafficLightBadge');
+      badge.className = `text-[10.5px] px-2.5 py-0.5 rounded-full font-extrabold ${meta.cls}`;
+      badge.innerText = meta.label;
+
+      document.getElementById('navCurrentPrice').innerText = `${s.price.toLocaleString()}원`;
+      document.getElementById('navCurrentChange').innerText = `${s.changePct >= 0 ? '+' : ''}${s.changePct}% ${s.changePct >= 0 ? '▲' : '▼'}`;
+
+      // 타점 도슨트 설명 (일반 모드 vs 실버 모드 쉬운 해설)
+      const docentEl = document.getElementById('navDocentText');
+      if (state.silverMode) {
+        if (s.signal === 'green') {
+          docentEl.innerHTML = `👵 <strong>[실버 쉬운 타점 해설]</strong><br>• <strong>들어가는 시점:</strong> 최근 한 달 평균 가격(${s.ma20Price.toLocaleString()}원)을 딛고 큰손들의 매수가 들어오고 있어 <strong>지금 분할로 사기 좋은 타이밍</strong>입니다.<br>• <strong>나오는 시점:</strong> 혹시라도 <strong>${s.stopPrice.toLocaleString()}원(-${s.stopPct}%)</strong> 밑으로 내려가면 미련 없이 팔아 원금을 지키고, <strong>${s.targetPrice.toLocaleString()}원(+${s.targetPct}%)</strong>까지 오르면 절반을 팔아 수익을 챙기세요.`;
+        } else if (s.signal === 'yellow') {
+          docentEl.innerHTML = `👵 <strong>[실버 쉬운 타점 해설]</strong><br>• <strong>들어가는 시점:</strong> 지금은 힘이 조금 빠져 있으니 서둘러 사지 마시고, 한 달 평균 가격인 <strong>${s.ma20Price.toLocaleString()}원 위로 올라오는지 확인한 뒤에</strong> 들어가세요.`;
+        } else {
+          docentEl.innerHTML = `👵 <strong>[실버 쉬운 타점 해설]</strong><br>• <strong>주의 안내:</strong> 단기간에 너무 많이 올라 위험한 구간입니다. 지금은 새로 사시면 안 되며, 가지고 계신 분만 수익을 챙겨 나오는 시점입니다.`;
+        }
+      } else {
+        if (s.signal === 'green') {
+          docentEl.innerHTML = `🎯 <strong>[추세추종 기술적 타점 판독]</strong><br>• <strong>들어가는 시점(진입):</strong> Weinstein <strong>Stage 2(상승국면)</strong> 및 5>20>60일 이평선 정배열 상태에서 20일선(${s.ma20Price.toLocaleString()}원) 지지 반등과 거래량 급증(${s.volSpike})이 합치되었습니다. <strong>현재가 ~ ${Math.round(s.price * 0.99).toLocaleString()}원 밴드 진입이 유효</strong>합니다.<br>• <strong>나오는 시점(이탈):</strong> 하단 손절매 <strong>${s.stopPrice.toLocaleString()}원(-${s.stopPct}%)</strong> 이탈 시 추세 훼손으로 즉시 손절하고, 상단 수익매 <strong>${s.targetPrice.toLocaleString()}원(+${s.targetPct}%)</strong> 도달 시 분할 익절합니다.`;
+        } else if (s.signal === 'yellow') {
+          docentEl.innerHTML = `🟡 <strong>[눌림목·추세회복 대기 타점]</strong><br>• 현재 주가가 20일 이동평균선(${s.ma20Price.toLocaleString()}원) 아래에서 조정 중입니다. 섣부른 물타기 대신 <strong>${s.ma20Price.toLocaleString()}원 돌파 안착 시점</strong>까지 진입을 보류하세요.`;
+        } else {
+          docentEl.innerHTML = `🔴 <strong>[단기 과열 · 추격매수 금지 타점]</strong><br>• RSI(${s.rsi}) 과열 및 20일선(${s.ma20Price.toLocaleString()}원) 대비 이격도가 과도합니다. 신규 진입은 20일선 부근 눌림목까지 대기하시고, 보유자는 수익매(익절)로 대응하세요.`;
+        }
+      }
+
+      // 기술적 지표 요약 바
+      document.getElementById('navTechIndicatorsBar').innerHTML = `
+        <div><span class="text-slate-400 block">추세국면</span><strong class="text-cyan-300">Stage ${s.stage}</strong></div>
+        <div><span class="text-slate-400 block">이평선배열</span><strong class="${s.maAligned ? 'text-emerald-400' : 'text-amber-400'}">${s.maAligned ? '정배열' : '역배열'}</strong></div>
+        <div><span class="text-slate-400 block">RSI(14)</span><strong class="${s.rsi > 70 ? 'text-rose-400' : 'text-white'}">${s.rsi}</strong></div>
+        <div><span class="text-slate-400 block">거래량수급</span><strong class="text-red-400">${s.volSpike}</strong></div>
+      `;
+
+      if (syncInputs) {
+        document.getElementById('inputStopPct').value = s.stopPct;
+        document.getElementById('inputStopPrice').value = s.stopPrice;
+        document.getElementById('inputTargetPct').value = s.targetPct;
+        document.getElementById('inputTargetPrice').value = s.targetPrice;
+      }
+
+      updateExpectedPnlAndRR();
+      recalcOrderQtyFromBudget();
+      renderNavSvgChart();
+    }
+
+    function selectNavStock(name) {
+      playBeep();
+      state.selectedStock = name;
+      renderNavigatorTab(true);
+    }
+
+    function setTimingLens(lensKey) {
+      playBeep();
+      state.lens = lensKey;
+      ['trend', 'pullback', 'breakout', 'income'].forEach(k => {
+        document.getElementById(`lensBtn-${k}`).className = (k === lensKey)
+          ? 'py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-extrabold'
+          : 'py-1.5 rounded-lg bg-slate-800 text-slate-300 font-bold';
+      });
+      const s = STOCKS[state.selectedStock];
+      if (lensKey === 'trend') { s.stopPct = 5.0; s.targetPct = 12.0; }
+      if (lensKey === 'pullback') { s.stopPct = 3.5; s.targetPct = 9.0; }
+      if (lensKey === 'breakout') { s.stopPct = 6.0; s.targetPct = 18.0; }
+      if (lensKey === 'income') { s.stopPct = 4.0; s.targetPct = 8.0; }
+      s.stopPrice = Math.round(s.price * (1 - s.stopPct / 100));
+      s.targetPrice = Math.round(s.price * (1 + s.targetPct / 100));
+      renderNavigatorTab(true);
+    }
+
+    // ★★★ 사용자가 손절매(%) 또는 손절매 가격(원)을 직접 타이핑했을 때 양방향 실시간 계산 ★★★
+    function onUserEditStopPct(val) {
+      const s = STOCKS[state.selectedStock];
+      const pct = Math.max(0.1, parseFloat(val) || 0);
+      s.stopPct = parseFloat(pct.toFixed(2));
+      s.stopPrice = Math.round(s.price * (1 - s.stopPct / 100));
+      document.getElementById('inputStopPrice').value = s.stopPrice;
+      updateExpectedPnlAndRR();
+      renderNavSvgChart();
+    }
+
+    function onUserEditStopPrice(val) {
+      const s = STOCKS[state.selectedStock];
+      const price = parseInt(val, 10) || 0;
+      if (price > 0 && price < s.price * 1.5) {
+        s.stopPrice = price;
+        const pct = Math.max(0.1, ((s.price - price) / s.price) * 100);
+        s.stopPct = parseFloat(pct.toFixed(2));
+        document.getElementById('inputStopPct').value = s.stopPct;
+        updateExpectedPnlAndRR();
+        renderNavSvgChart();
+      }
+    }
+
+    // ★★★ 사용자가 수익매(%) 또는 수익매 가격(원)을 직접 타이핑했을 때 양방향 실시간 계산 ★★★
+    function onUserEditTargetPct(val) {
+      const s = STOCKS[state.selectedStock];
+      const pct = Math.max(0.1, parseFloat(val) || 0);
+      s.targetPct = parseFloat(pct.toFixed(2));
+      s.targetPrice = Math.round(s.price * (1 + s.targetPct / 100));
+      document.getElementById('inputTargetPrice').value = s.targetPrice;
+      updateExpectedPnlAndRR();
+      renderNavSvgChart();
+    }
+
+    function onUserEditTargetPrice(val) {
+      const s = STOCKS[state.selectedStock];
+      const price = parseInt(val, 10) || 0;
+      if (price > 0) {
+        s.targetPrice = price;
+        const pct = Math.max(0.1, ((price - s.price) / s.price) * 100);
+        s.targetPct = parseFloat(pct.toFixed(2));
+        document.getElementById('inputTargetPct').value = s.targetPct;
+        updateExpectedPnlAndRR();
+        renderNavSvgChart();
+      }
+    }
+
+    function updateExpectedPnlAndRR() {
+      const s = STOCKS[state.selectedStock];
+      const lossPerShare = Math.max(0, s.price - s.stopPrice);
+      const gainPerShare = Math.max(0, s.targetPrice - s.price);
+      const rr = lossPerShare > 0 ? (gainPerShare / lossPerShare).toFixed(2) : '0.00';
+
+      document.getElementById('stopLossExpectedAmt').innerText = `1주당 -${lossPerShare.toLocaleString()}원 손절폭`;
+      document.getElementById('takeProfitExpectedAmt').innerText = `1주당 +${gainPerShare.toLocaleString()}원 수익폭`;
+      document.getElementById('navRRBadge').innerText = `손익비 1 : ${rr} ${parseFloat(rr) >= 2.0 ? '(우수★)' : '(보통)'}`;
+    }
+
+    function resetToAiRecommendedTargets() {
+      playBeep();
+      const s = STOCKS[state.selectedStock];
+      s.stopPct = 5.0;
+      s.stopPrice = Math.round(s.price * 0.95);
+      s.targetPct = 12.0;
+      s.targetPrice = Math.round(s.price * 1.12);
+      renderNavigatorTab(true);
+      showBanner('🎯 AI 추천 추세 타점 복원', `${state.selectedStock} 손절매 -5% / 수익매 +12% 세팅`, '차트 지지선과 손익비(1:2.4)에 맞춘 기본 타점으로 복원되었습니다.');
+    }
+
+    function recalcOrderQtyFromBudget() {
+      const s = STOCKS[state.selectedStock];
+      const budget = parseInt(document.getElementById('inputOrderBudget').value, 10) || 0;
+      const qty = Math.max(0, Math.floor(budget / s.price));
+      const total = qty * s.price;
+      document.getElementById('orderCalcQtyText').innerText = `${qty}주 (${total.toLocaleString()}원)`;
+    }
+
+    function applyOnePercentRiskSizing() {
+      playBeep();
+      const s = STOCKS[state.selectedStock];
+      const lossPerShare = Math.max(100, s.price - s.stopPrice);
+      const maxAllowedLoss = Math.round(4766300 * 0.015); // 총자산의 1.5% 허용 손실
+      const optimalQty = Math.max(1, Math.min(Math.floor(state.cash / s.price), Math.floor(maxAllowedLoss / lossPerShare)));
+      const optimalBudget = optimalQty * s.price;
+      document.getElementById('inputOrderBudget').value = optimalBudget;
+      recalcOrderQtyFromBudget();
+      showBanner('📐 1.5% 리스크 포지션 사이징 완료', `권장 매수량: ${optimalQty}주 (${optimalBudget.toLocaleString()}원)`, `직접 기입하신 손절매(${s.stopPrice.toLocaleString()}원) 도달 시에도 전체 계좌 손실이 1.5% 이내로 제한됩니다.`);
+    }
+
+    function renderNavSvgChart() {
+      const svg = document.getElementById('navSvgChart');
+      if (!svg) return;
+      const s = STOCKS[state.selectedStock];
+      const pts = s.candles;
+      const curP = s.price;
+      const stopP = s.stopPrice;
+      const targetP = s.targetPrice;
+
+      const minP = Math.min(...pts, stopP * 0.985);
+      const maxP = Math.max(...pts, targetP * 1.015);
+      const range = (maxP - minP) || 1;
+      const getY = (val) => 165 - ((val - minP) / range * 140);
+
+      const yT = getY(targetP);
+      const yC = getY(curP);
+      const yS = getY(stopP);
+      const yMa20 = getY(s.ma20Price);
+
+      let html = `
+        <line x1="10" y1="30" x2="370" y2="30" stroke="#1e293b" stroke-dasharray="3,3"/>
+        <line x1="10" y1="95" x2="370" y2="95" stroke="#1e293b" stroke-dasharray="3,3"/>
+        <line x1="10" y1="165" x2="370" y2="165" stroke="#334155"/>
+
+        <!-- 수익매(익절) 영역 박스 -->
+        <rect x="195" y="${Math.min(yT, yC)}" width="172" height="${Math.abs(yC - yT)}" fill="#10b981" opacity="0.15"/>
+        <!-- 손절매 영역 박스 -->
+        <rect x="195" y="${Math.min(yC, yS)}" width="172" height="${Math.abs(yS - yC)}" fill="#f43f5e" opacity="0.18"/>
+
+        <!-- 수익매 라인 -->
+        <line x1="12" y1="${yT}" x2="368" y2="${yT}" stroke="#10b981" stroke-width="1.6" stroke-dasharray="4,3"/>
+        <text x="200" y="${yT + 11}" fill="#6ee7b7" font-size="9" font-weight="bold">🎯 수익매 ${targetP.toLocaleString()}원 (+${s.targetPct}%)</text>
+
+        <!-- 현재 진입가 라인 -->
+        <line x1="12" y1="${yC}" x2="368" y2="${yC}" stroke="#38bdf8" stroke-width="1.2"/>
+        <text x="200" y="${yC - 4}" fill="#38bdf8" font-size="9" font-weight="bold">⚡ 현재가 ${curP.toLocaleString()}원</text>
+
+        <!-- 20일 이평선 지지라인 -->
+        <line x1="12" y1="${yMa20}" x2="190" y2="${yMa20}" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="2,2"/>
+        <text x="15" y="${yMa20 - 4}" fill="#fcd34d" font-size="8.5">20일선 ${s.ma20Price.toLocaleString()}원</text>
+
+        <!-- 손절매 라인 -->
+        <line x1="12" y1="${yS}" x2="368" y2="${yS}" stroke="#f43f5e" stroke-width="1.6" stroke-dasharray="4,3"/>
+        <text x="200" y="${yS + 11}" fill="#fda4af" font-size="9" font-weight="bold">🛡️ 손절매 ${stopP.toLocaleString()}원 (-${s.stopPct}%)</text>
+      `;
+
+      pts.forEach((closeVal, idx) => {
+        const x = 24 + idx * 28;
+        const prevVal = idx > 0 ? pts[idx - 1] : closeVal * 0.985;
+        const isUp = closeVal >= prevVal;
+        const col = isUp ? '#ef4444' : '#3b82f6';
+        const highVal = Math.max(closeVal, prevVal) * 1.01;
+        const lowVal = Math.min(closeVal, prevVal) * 0.99;
+        const yO = getY(prevVal), yCl = getY(closeVal), yH = getY(highVal), yL = getY(lowVal);
+
+        html += `
+          <line x1="${x + 8}" y1="${yH}" x2="${x + 8}" y2="${yL}" stroke="${col}" stroke-width="1.5"/>
+          <rect x="${x}" y="${Math.min(yO, yCl)}" width="16" height="${Math.max(4, Math.abs(yCl - yO))}" fill="${col}" rx="2"/>
+        `;
+      });
+
+      svg.innerHTML = html;
+    }
+
+    function speakCurrentStockTiming() {
+      const sName = state.selectedStock;
+      const s = STOCKS[sName];
+      speakText(`${sName}의 현재 가격은 ${s.price.toLocaleString()}원입니다. 고객님이 설정하신 손절매 기준은 ${s.stopPrice.toLocaleString()}원이며, 수익매 목표 가격은 ${s.targetPrice.toLocaleString()}원입니다.`);
+    }
+
+    // 주문 실행 + 손절매·수익매 오토파일럿 동시 등록
+    function executeTimingOrderWithBrackets() {
+      const sName = state.selectedStock;
+      const s = STOCKS[sName];
+
+      // 실버 모드이거나 과열 종목(티에스이) 매수 시도 시 사기/과열 예방 모달 작동!
+      if (s.signal === 'red') {
+        openScamGuardDemoModal();
+        return;
+      }
+
+      // 퇴직연금 IRP 계좌에서 개별주식 주문 시 법규 가드 작동
+      if (state.account === 'irp' && s.type === '국내주식') {
+        showBanner('🚫 퇴직연금(DC/IRP) 개별주식 매수 불가', `${sName}은(는) 개별주식이므로 연금계좌 편입이 금지됩니다`, '중개형 ISA 또는 일반위탁 계좌로 자동 전환하여 주문을 도와드립니다.');
+        state.account = 'isa';
+        document.getElementById('accountSelector').value = 'isa';
+        return;
+      }
+
+      const budget = parseInt(document.getElementById('inputOrderBudget').value, 10) || 0;
+      const qty = Math.floor(budget / s.price);
+      const cost = qty * s.price;
+
+      if (qty <= 0 || state.cash < cost) {
+        showBanner('⚠️ 주문가능 예수금 부족', '예수금 범위 내에서 금액을 조정해 주세요', `현재 주문가능 예수금: ${state.cash.toLocaleString()}원`);
+        return;
+      }
+
+      state.cash -= cost;
+      if (!state.holdings[sName]) {
+        state.holdings[sName] = { qty: 0, avgPrice: s.price };
+      }
+      state.holdings[sName].qty += qty;
+
+      addLog('타점주문+오토가드', `${sName} ${qty}주 진입 체결 (-${cost.toLocaleString()}원)`, `직접 설정한 손절매 ${s.stopPrice.toLocaleString()}원(-${s.stopPct}%) / 수익매 ${s.targetPrice.toLocaleString()}원(+${s.targetPct}%) 자동감시 시작`);
+      showBanner('✅ 진입 주문 & 손절매·수익매 등록 완료!', `${sName} ${qty}주 매수 체결 (${cost.toLocaleString()}원)`, `손절매 ${s.stopPrice.toLocaleString()}원 / 수익매 ${s.targetPrice.toLocaleString()}원에 도달하면 오토파일럿이 알아서 실행합니다.`);
+      updateLivePricesOnScreen();
+    }
+
+    // ================= TAB 3: 핸즈프리 오토파일럿 (설정 탭) =================
+    function toggleMasterAutopilot() {
+      playBeep(800);
+      state.autopilotOn = !state.autopilotOn;
+      const btn = document.getElementById('btnMasterAutopilot');
+      const homeBadge = document.getElementById('autopilotBadgeHome');
+      const sub = document.getElementById('headerSubStatus');
+
+      if (state.autopilotOn) {
+        btn.innerText = 'AUTO-PILOT ON';
+        btn.className = 'px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 text-xs font-black shadow-lg';
+        homeBadge.innerText = '🤖 오토파일럿: 가동중 (손절·수익매 자동대행)';
+        homeBadge.className = 'cursor-pointer text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold';
+        sub.innerText = '🤖 핸즈프리 오토파일럿 가동중 (자동 손절·익절·진입)';
+        addLog('오토파일럿 ON', '핸즈프리 오토파일럿 활성화', `내가 손을 댈 수 없을 때 설정된 손절매(-${state.globalStopPct}%)·수익매(+${state.globalTargetPct}%) 자동 집행`);
+        showBanner('🤖 핸즈프리 오토파일럿 ON', '이제 호가창을 보지 못하셔도 NAVI가 대행합니다', '업무·회의·수면·여행 중 타점 도달 시 사전 설정된 숫자로 즉시 집행합니다.');
+      } else {
+        btn.innerText = 'OFF';
+        btn.className = 'px-4 py-2 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 text-xs font-black';
+        homeBadge.innerText = '🤖 오토파일럿: 대기중 (설정 ➔)';
+        homeBadge.className = 'cursor-pointer text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-bold';
+        sub.innerText = '타점 내비게이터 가동중 · 오토파일럿 대기';
+      }
+      renderAutopilotTab();
+    }
+
+    function selectAutopilotPreset(mode) {
+      playBeep();
+      state.autopilotPreset = mode;
+      ['work', 'sleep', 'away'].forEach(k => {
+        document.getElementById(`presetBtn-${k}`).className = (k === mode)
+          ? 'p-2 rounded-xl bg-cyan-500/20 border border-cyan-400 text-cyan-200 font-bold text-center'
+          : 'p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 font-bold text-center';
+      });
+    }
+
+    function updateGlobalAutopilotParams() {
+      const stop = parseFloat(document.getElementById('apGlobalStopPct').value) || 5.0;
+      const target = parseFloat(document.getElementById('apGlobalTargetPct').value) || 12.0;
+      const maxBuy = parseInt(document.getElementById('apGlobalMaxBuy').value, 10) || 600000;
+
+      state.globalStopPct = stop;
+      state.globalTargetPct = target;
+      state.globalMaxBuy = maxBuy;
+
+      Object.values(STOCKS).forEach(s => {
+        s.stopPct = stop;
+        s.stopPrice = Math.round(s.price * (1 - stop / 100));
+        s.targetPct = target;
+        s.targetPrice = Math.round(s.price * (1 + target / 100));
+      });
+      renderAutopilotTab();
+    }
+
+    function simulateAutopilotStopLoss() {
+      if (!state.autopilotOn) toggleMasterAutopilot();
+      const target = (state.holdings['삼성전자'] && state.holdings['삼성전자'].qty > 0) ? '삼성전자' : 'DB하이텍';
+      const h = state.holdings[target];
+      if (!h || h.qty <= 0) {
+        showBanner('ℹ️ 보유수량 없음', '손절매 테스트를 위해 먼저 진입타점 자동매수를 눌러보세요', '');
+        return;
+      }
+      const s = STOCKS[target];
+      s.price = s.stopPrice;
+      const sellQty = h.qty;
+      const proceeds = sellQty * s.price;
+      h.qty = 0;
+      state.cash += proceeds;
+
+      addLog('오토파일럿 손절매', `📉 [자동 손절매 완료] ${target} ${sellQty}주 매도 (+${proceeds.toLocaleString()}원)`, `사용자 설정 손절매 가격(${s.stopPrice.toLocaleString()}원, -${s.stopPct}%) 도달 즉시 자동 체결`, 'text-rose-400');
+      showBanner('📉 오토파일럿 · 손절매 자동 체결 완료!', `${target} ${sellQty}주 손절 매도 (+${proceeds.toLocaleString()}원 현금 확보)`, `호가창을 못 보시는 사이 설정하신 손절매(${s.stopPrice.toLocaleString()}원)에 도달하여 추가 하락을 막았습니다.`);
+      updateLivePricesOnScreen();
+      renderAutopilotTab();
+    }
+
+    function simulateAutopilotTakeProfit() {
+      if (!state.autopilotOn) toggleMasterAutopilot();
+      const target = (state.holdings['DB하이텍'] && state.holdings['DB하이텍'].qty > 0) ? 'DB하이텍' : Object.keys(state.holdings).find(k => state.holdings[k].qty > 0);
+      if (!target || state.holdings[target].qty <= 0) {
+        showBanner('ℹ️ 보유수량 없음', '먼저 진입타점 자동매수를 실행해 보세요', '');
+        return;
+      }
+      const h = state.holdings[target];
+      const s = STOCKS[target];
+      s.price = s.targetPrice;
+      const sellQty = Math.max(1, Math.ceil(h.qty * 0.5));
+      const proceeds = sellQty * s.price;
+      const gain = (s.price - h.avgPrice) * sellQty;
+      h.qty -= sellQty;
+      state.cash += proceeds;
+
+      addLog('오토파일럿 수익매', `🎯 [자동 수익매 완료] ${target} ${sellQty}주 분할익절 (+${proceeds.toLocaleString()}원)`, `사용자 설정 수익매 가격(${s.targetPrice.toLocaleString()}원, +${s.targetPct}%) 도달 ➔ 수익 +${gain.toLocaleString()}원 확정`, 'text-emerald-400');
+      showBanner('🎯 오토파일럿 · 수익매(익절) 자동 체결!', `${target} ${sellQty}주 수익매 완료 (수익 +${gain.toLocaleString()}원 확정)`, `기입해 두신 목표가(${s.targetPrice.toLocaleString()}원)에 도달하여 절반을 자동 익절했습니다.`);
+      updateLivePricesOnScreen();
+      renderAutopilotTab();
+    }
+
+    function simulateAutopilotEntryBuy() {
+      if (!state.autopilotOn) toggleMasterAutopilot();
+      const target = '로보티즈';
+      const s = STOCKS[target];
+      const budget = Math.min(state.cash, state.globalMaxBuy);
+      const qty = Math.floor(budget / s.price);
+      if (qty <= 0) {
+        showBanner('⚠️ 예수금 부족', '수익매나 손절매 시뮬레이션으로 현금을 먼저 확보해 주세요', '');
+        return;
+      }
+      const cost = qty * s.price;
+      state.cash -= cost;
+      if (!state.holdings[target]) state.holdings[target] = { qty: 0, avgPrice: s.price };
+      state.holdings[target].qty += qty;
+
+      addLog('오토파일럿 진입매수', `🟢 [자동 진입매수] ${target} ${qty}주 체결 (-${cost.toLocaleString()}원)`, `🟢 진입 타점(20일선 반등 + 수급 돌파) 포착 ➔ 손절매(${s.stopPrice.toLocaleString()}원)·수익매(${s.targetPrice.toLocaleString()}원) 자동 세팅`, 'text-cyan-300');
+      showBanner('🟢 오토파일럿 · 관심종목 진입타점 자동 매수!', `${target} ${qty}주 매수 완료 (-${cost.toLocaleString()}원)`, `관심종목이 진입 타점에 도달하여 자동으로 매수하고 손절매·수익매 라인을 걸어두었습니다.`);
+      updateLivePricesOnScreen();
+      renderAutopilotTab();
+    }
+
+    function renderAutopilotTab() {
+      const listEl = document.getElementById('autopilotRulesList');
+      if (listEl) {
+        listEl.innerHTML = Object.entries(STOCKS).map(([name, s]) => {
+          const isHeld = state.holdings[name] && state.holdings[name].qty > 0;
+          return `
+            <div onclick="openStockTimingDetail('${name}')" class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between cursor-pointer hover:border-cyan-500/40">
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <strong class="text-white">${name}</strong>
+                  <span class="text-[9.5px] px-1.5 py-0.2 rounded ${isHeld ? 'bg-blue-500/20 text-blue-300' : 'bg-slate-800 text-slate-400'} font-bold">
+                    ${isHeld ? `보유 ${state.holdings[name].qty}주` : '관심종목'}
+                  </span>
+                </div>
+                <div class="text-[10.5px] text-slate-400 font-mono mt-0.5">
+                  손절매: <span class="text-rose-400">${s.stopPrice.toLocaleString()}원(-${s.stopPct}%)</span> · 수익매: <span class="text-emerald-400">${s.targetPrice.toLocaleString()}원(+${s.targetPct}%)</span>
+                </div>
+              </div>
+              <span class="text-[10px] text-cyan-400 font-bold">숫자수정 ➔</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const logEl = document.getElementById('autopilotLogContainer');
+      if (logEl) {
+        logEl.innerHTML = state.logs.map(l => `
+          <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 space-y-0.5">
+            <div class="flex justify-between items-center">
+              <span class="text-[10px] font-extrabold ${l.color}">[${l.tag}] ${l.title}</span>
+              <span class="text-[9px] text-slate-500 font-mono">${l.time}</span>
+            </div>
+            <p class="text-[10.5px] text-slate-300 leading-snug">${l.desc}</p>
+          </div>
+        `).join('');
+      }
+    }
+
+    // ================= TAB 4: 100세 실버 & 증권사 절세·연금 에이전트 =================
+    function activateHealthInsuranceGuard() {
+      playBeep(880);
+      state.account = 'isa';
+      document.getElementById('accountSelector').value = 'isa';
+      addLog('건보료 2000만원 방어', '실버 건강보험 피부양자 자격 방어 가드 ON', '향후 배당·이자형 ETF 매수 시 건보료 산정에서 제외되는 중개형 ISA 계좌로 자동 라우팅');
+      showBanner('🏥 건보료 피부양자 방어 가드 활성화!', '중개형 ISA 비과세·분리과세 계좌로 자동 전환되었습니다', '연 금융소득 2,000만 원 초과로 인한 건보료 폭탄을 막기 위해 향후 배당주 주문을 ISA 계좌로 우선 집행합니다.');
+    }
+
+    function calcSilverCashflowPlan() {
+      const targetMonthly = parseInt(document.getElementById('inputSilverMonthlyCash').value, 10) || 1500000;
+      const annualNeeded = targetMonthly * 12;
+      const requiredCapitalMan = Math.round((annualNeeded / 0.048) / 10000);
+      document.getElementById('silverRequiredPrincipal').innerText = `약 ${(requiredCapitalMan / 10000).toFixed(1)}억 원 (월배당+국채)`;
+    }
+
+    function executeSilverCashflowPortfolio() {
+      playBeep(840);
+      addLog('실버 월생활비 설계', '은퇴 생활비 월배당 파이프라인 바스켓 주문 등록', 'TIGER 미국배당다우존스(50%) + ACE 미국30년국채(50%) 매월 25일 현금흐름 세팅');
+      showBanner('💰 은퇴 생활비 월배당 바스켓 구성 완료!', '매달 따박따박 현금흐름 파이프라인이 세팅되었습니다', '원금 변동성을 낮추면서 매월 분배금이 입금되도록 포트폴리오를 구성했습니다.');
+    }
+
+    function openScamGuardDemoModal() {
+      playBeep(520);
+      document.getElementById('scamGuardModal').classList.add('open');
+      speakText('어르신, 잠깐만 확인해 주세요! 선택하신 종목은 최근 단기간에 너무 급격히 올라 추격 매수 위험 신호가 켜진 종목입니다. 카톡방이나 문자 추천을 받으셨다면 주의하세요.');
+    }
+
+    function closeScamGuardModal() {
+      document.getElementById('scamGuardModal').classList.remove('open');
+    }
+
+    function sendFamilySafeAlert() {
+      closeScamGuardModal();
+      addLog('실버 사기예방 가드', '과열 급등주(티에스이) 매수 보류 및 보호자·PB 안전 확인 전송', '리딩방 추격매수 피해 사전 차단 완료', 'text-amber-300');
+      showBanner('📱 자녀 & 전담 PB 안심 확인 요청 완료', '급등주 주문을 안전하게 보류하고 확인 메시지를 보냈습니다', '보호자(장남 김진우 님)와 전담 PB가 종목 안전성을 확인한 뒤 연락드립니다.');
+    }
+
+    function executeIrp7030Order() {
+      playBeep(860);
+      addLog('퇴직연금 70:30 번들', 'IRP 위험자산 70% 한도 준수 묶음주문 완료', 'KODEX 미국S&P500(70%) + 적격TDF 안전자산(30%) 원클릭 동시 매수');
+      showBanner('🏦 퇴직연금(IRP) 70:30 법규준수 체결 완료', '위험자산 70% + 안전자산 30% 황금비율 자동 체결', '연금 계좌 한도 초과 오류 없이 한 번에 편입을 완료했습니다.');
+    }
+
+    function handleAccountChange(acc) {
+      state.account = acc;
+      const names = { cma: '일반위탁(CMA)', isa: '중개형 ISA(절세)', irp: '퇴직연금 IRP' };
+      showBanner('🏦 운용계좌 변경', `${names[acc]} 계좌가 선택되었습니다`, acc === 'irp' ? '퇴직연금 계좌에서는 개별주식 직접 매수가 차단되며 ETF·펀드만 편입 가능합니다.' : '정상 연동되었습니다.');
+    }
+
+    // 관심종목 추가 모달
+    function openAddWatchlistModal() { playBeep(); document.getElementById('addWatchModal').classList.add('open'); }
+    function closeAddWatchlistModal() { document.getElementById('addWatchModal').classList.remove('open'); }
+    function addNewWatchStock(name, code, price, changePct, signal, stage, maAligned, volSpike, rsi) {
+      STOCKS[name] = {
+        code, type: '국내주식', price, changePct, signal, stage, maAligned,
+        ma20Price: Math.round(price * 0.96), volSpike, rsi, macd: '상승 추세 지속',
+        stopPct: state.globalStopPct, stopPrice: Math.round(price * (1 - state.globalStopPct / 100)),
+        targetPct: state.globalTargetPct, targetPrice: Math.round(price * (1 + state.globalTargetPct / 100)),
+        candles: [Math.round(price*0.92), Math.round(price*0.94), Math.round(price*0.96), Math.round(price*0.98), Math.round(price*0.99), price]
+      };
+      closeAddWatchlistModal();
+      state.selectedStock = name;
+      switchTab('navigator');
+    }
+
+    // ================= TAB 5: 자연어 대화형 에이전트 =================
+    function appendChat(role, html) {
+      const area = document.getElementById('chatBubblesArea');
+      const div = document.createElement('div');
+      div.className = role === 'user'
+        ? 'p-3 rounded-2xl bg-cyan-500 text-slate-950 font-bold text-xs max-w-[85%] ml-auto'
+        : 'glass-card p-3.5 text-xs text-slate-200 space-y-2';
+      if (role === 'user') div.innerText = html;
+      else div.innerHTML = html;
+      area.appendChild(div);
+      const stream = document.getElementById('chatStream');
+      stream.scrollTop = stream.scrollHeight;
+    }
+
+    function sendQuickChat(text) {
+      document.getElementById('chatInput').value = text;
+      handleChatSubmit();
+    }
+
+    function handleChatSubmit() {
+      const inp = document.getElementById('chatInput');
+      const q = inp.value.trim();
+      if (!q) return;
+      inp.value = '';
+      playBeep();
+      appendChat('user', q);
+
+      Object.keys(STOCKS).forEach(n => { if (q.includes(n)) state.selectedStock = n; });
+
+      setTimeout(() => {
+        if (q.includes('실버') || q.includes('건보료')) {
+          if (!state.silverMode) toggleSilverMode();
+          appendChat('ai', `
+            <div class="text-amber-300 font-extrabold">👵 [100세 시대 실버 케어 에이전트 가동]</div>
+            <p class="text-slate-200 leading-relaxed">
+              어르신께서 보기 편하시도록 큰글씨·쉬운 말 해설 모드로 전환했습니다.<br>
+              또한 연간 배당소득이 2,000만 원을 넘어 <strong>건강보험 피부양자에서 탈락하지 않도록 중개형 ISA 비과세 계좌로 주문을 자동 연결</strong>해 두었습니다.
+            </p>
+            <button onclick="switchTab('silver')" class="w-full py-2 rounded-xl bg-amber-500 text-slate-950 font-black">실버 건보료 방어 & 월생활비 화면 열기</button>
+          `);
+        } else if (q.includes('오토파일럿') || q.includes('손절매')) {
+          if (!state.autopilotOn) toggleMasterAutopilot();
+          appendChat('ai', `
+            <div class="text-cyan-300 font-extrabold">⚙️ [손절매·수익매 맞춤 기입 및 오토파일럿 가동]</div>
+            <p class="text-slate-200 leading-relaxed">
+              바쁘셔서 호가창을 보지 못하실 때도 NAVI가 설정된 손절매·수익매 가격에 맞춰 자동으로 주문을 실행합니다. 타점 판독기에서 원하는 숫자를 자유롭게 수정하실 수 있습니다.
+            </p>
+            <button onclick="switchTab('navigator')" class="w-full py-2 rounded-xl bg-cyan-500 text-slate-950 font-extrabold">손절매·수익매 숫자 직접 기입하러 가기</button>
+          `);
+        } else {
+          const s = STOCKS[state.selectedStock];
+          const meta = getSignalMeta(s.signal);
+          appendChat('ai', `
+            <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
+              <strong class="text-cyan-300 font-extrabold">🎯 [${state.selectedStock}] 타점 내비게이터 판독</strong>
+              <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${meta.cls}">${meta.label}</span>
+            </div>
+            <p class="text-slate-200 leading-relaxed">
+              • <strong>들어가는 시점:</strong> 현재가 ${s.price.toLocaleString()}원 (20일선 ${s.ma20Price.toLocaleString()}원 지지 확인)<br>
+              • <strong>나오는 시점 (손절매):</strong> <span class="text-rose-400 font-mono font-bold">${s.stopPrice.toLocaleString()}원 (-${s.stopPct}%)</span><br>
+              • <strong>나오는 시점 (수익매):</strong> <span class="text-emerald-400 font-mono font-bold">${s.targetPrice.toLocaleString()}원 (+${s.targetPct}%)</span>
+            </p>
+            <button onclick="switchTab('navigator')" class="w-full py-2 rounded-xl bg-cyan-500 text-slate-950 font-extrabold">차트 작도 확인 & 손절·수익매 직접 수정</button>
+          `);
+        }
+      }, 250);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderHomeLists();
+      renderNavigatorTab(true);
+      renderAutopilotTab();
+      startAlwaysOnRealtimeMarket();
+    });
+  </script>
+</body>
+</html>
