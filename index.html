@@ -1,0 +1,2384 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>현대차증권 MTS × NAVI | 개인화 AI 투자 에이전트 발표 시연</title>
+  <style>
+    /* hidden 속성 강제 보장 */
+    [hidden], .hidden { display: none !important; }
+
+    :root {
+      --bg: #e6ebf4;
+      --surface: #ffffff;
+      --card: #ffffff;
+      --sub: #f6f8fc;
+      --line: #dfe5f0;
+      --text: #151b26;
+      --muted: #647084;
+      --navy: #0f2557;
+      --navy-dark: #0a1428;
+      --primary: #25489c;
+      --primary-soft: #edf2ff;
+      --cyan: #0ea5e9;
+      --up: #dc2626;      /* 한국 MTS 상승: 빨강 */
+      --down: #2563eb;    /* 한국 MTS 하락: 파랑 */
+      --green: #059669;
+      --amber: #d97706;
+      --purple: #7c3aed;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", "Malgun Gothic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13.5px;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+    button, input, select, textarea { font: inherit; }
+    button {
+      cursor: pointer;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 7px 11px;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    button:hover { border-color: #b4c2dc; }
+    button:active { transform: scale(0.98); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+    /* 전체 3단 프레젠테이션 셸 레이아웃 */
+    .shell {
+      max-width: 1380px;
+      margin: 18px auto;
+      padding: 0 18px;
+      display: grid;
+      grid-template-columns: 300px minmax(405px, 455px) 310px;
+      gap: 22px;
+      justify-content: center;
+      align-items: start;
+    }
+    .aside { position: sticky; top: 18px; max-height: calc(100dvh - 36px); overflow-y: auto; scrollbar-width: thin; }
+    .aside-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 15px;
+      margin-bottom: 12px;
+      box-shadow: 0 6px 20px rgba(15, 37, 87, 0.05);
+    }
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      color: var(--primary);
+      text-transform: uppercase;
+    }
+
+    /* 좌측 발표 시연 버튼 스타일 */
+    .demo-btn {
+      width: 100%;
+      text-align: left;
+      padding: 10px 12px;
+      margin-top: 7px;
+      font-size: 12px;
+      background: var(--sub);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      position: relative;
+    }
+    .demo-btn:hover { border-color: var(--primary); background: var(--primary-soft); }
+    .demo-btn.active-step {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, #eef3ff 0%, #e0eaff 100%);
+      box-shadow: 0 4px 12px rgba(37, 72, 156, 0.12);
+    }
+    .demo-btn b { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--primary); margin-bottom: 2px; }
+    .demo-btn span.time-badge {
+      background: var(--navy);
+      color: #fff;
+      padding: 1px 6px;
+      border-radius: 99px;
+      font-size: 9.5px;
+      font-weight: 700;
+    }
+
+    /* 대본 텔레프롬프터 박스 */
+    .script-box {
+      background: var(--navy-dark);
+      color: #e2e8f0;
+      border-radius: 14px;
+      padding: 13px;
+      font-size: 12px;
+      line-height: 1.6;
+      border: 1px solid #1e3a8a;
+    }
+    .script-box strong { color: #38bdf8; }
+
+    /* 중앙 스마트폰 MTS 프레임 */
+    .phone {
+      height: calc(100dvh - 36px);
+      min-height: 760px;
+      max-height: 920px;
+      background: var(--surface);
+      border: 8px solid #0f172a;
+      border-radius: 36px;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24), 0 0 0 1px #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 스마트폰 최상단 상태바 & 다이나믹 아일랜드 */
+    .sys-statusbar {
+      height: 36px;
+      background: #0a1224;
+      color: #ffffff;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+    .dynamic-island {
+      background: #000000;
+      border: 1px solid #1e293b;
+      padding: 3px 10px;
+      border-radius: 99px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 800;
+      color: #38bdf8;
+      cursor: pointer;
+    }
+    .pulse-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
+      animation: pulseAnim 1.5s infinite;
+    }
+    @keyframes pulseAnim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.25); }
+    }
+
+    /* MTS 상단 헤더 */
+    .mts-header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+      z-index: 15;
+    }
+    .mts-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px 7px;
+      gap: 6px;
+    }
+    .domain-tabs { display: flex; gap: 11px; align-items: center; overflow-x: auto; }
+    .domain-tabs button {
+      border: 0; background: none; padding: 4px 1px;
+      font-size: 14px; font-weight: 800; color: #94a3b8;
+      border-radius: 0; white-space: nowrap;
+    }
+    .domain-tabs button.selected { color: var(--text); border-bottom: 2.5px solid var(--navy); }
+
+    .mode-pill-switch {
+      display: inline-flex;
+      background: var(--sub);
+      border: 1px solid var(--line);
+      border-radius: 99px;
+      padding: 2px;
+      flex-shrink: 0;
+    }
+    .mode-pill-switch button {
+      border: 0; background: transparent;
+      padding: 3px 8px; font-size: 10.5px; border-radius: 99px;
+      color: var(--muted); font-weight: 700;
+    }
+    .mode-pill-switch button.active {
+      background: var(--navy); color: #ffffff;
+    }
+
+    /* 상시 맥락 앰비언트 바 */
+    .muse-ambient-bar {
+      margin: 4px 12px 8px;
+      padding: 9px 12px;
+      background: linear-gradient(135deg, #0f1f44 0%, #1d356b 100%);
+      border: 1px solid #3b82f6;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 9px;
+      cursor: pointer;
+      color: #ffffff;
+      box-shadow: 0 6px 16px rgba(15, 37, 87, 0.16);
+    }
+    .muse-orb {
+      width: 26px; height: 26px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #38bdf8, #3b82f6);
+      color: #091224;
+      display: grid; place-items: center;
+      font-weight: 900; font-size: 13px;
+      flex-shrink: 0;
+    }
+    .muse-bar-text { flex: 1; min-width: 0; text-align: left; }
+    .muse-bar-text strong { display: block; font-size: 12px; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .muse-bar-text small { display: block; font-size: 10.5px; color: #bae6fd; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* 호스트 화면 스크롤 뷰 */
+    .host-view {
+      flex: 1;
+      overflow-y: auto;
+      padding: 11px 14px 80px;
+      background: #f4f6fb;
+      scrollbar-width: thin;
+    }
+
+    /* 다크 HUD 카드 (두 번째 HTML 감성 계승) */
+    .navi-hud-card {
+      background: linear-gradient(145deg, #0b162c 0%, #132347 100%);
+      border: 1.5px solid #38bdf8;
+      box-shadow: 0 10px 25px rgba(14, 165, 233, 0.18);
+      border-radius: 16px;
+      color: #ffffff;
+      padding: 14px;
+      margin-bottom: 11px;
+    }
+
+    /* 공통 유틸리티 & 카드 */
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .flex { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 13px;
+      margin-bottom: 10px;
+    }
+    .card-soft {
+      background: var(--sub);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px;
+      margin-bottom: 9px;
+    }
+    .primary-btn { background: var(--primary); color: #ffffff; border-color: var(--primary); font-weight: 700; }
+    .cyan-btn { background: #0284c7; color: #ffffff; border-color: #0284c7; font-weight: 700; }
+    .buy-btn { background: var(--up); color: #ffffff; border-color: var(--up); font-weight: 800; }
+    .sell-btn { background: var(--down); color: #ffffff; border-color: var(--down); font-weight: 800; }
+    .ghost-btn { background: transparent; border-color: var(--line); color: var(--muted); }
+    .wide { width: 100%; }
+
+    .tag {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2.5px 7px; border-radius: 6px;
+      font-size: 10.5px; font-weight: 800;
+    }
+    .tag.good { background: #dcfce7; color: #047857; }
+    .tag.warn { background: #fef3c7; color: #b45309; }
+    .tag.bad { background: #fee2e2; color: #b91c1c; }
+    .tag.info { background: #e0f2fe; color: #0369a1; }
+
+    /* 종목 리스트 행 */
+    .stock-row {
+      width: 100%;
+      border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+      background: transparent;
+      padding: 11px 2px;
+      display: flex; align-items: center; justify-content: space-between;
+      text-align: left;
+    }
+    .stock-row:last-child { border-bottom: 0; }
+
+    /* 하단 MTS 네비게이션 바 */
+    .mts-bottom-nav {
+      height: 60px;
+      background: #0f172a;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: center;
+      flex-shrink: 0;
+      z-index: 20;
+      border-top: 1px solid #1e293b;
+    }
+    .mts-bottom-nav button {
+      border: 0; background: transparent; color: #94a3b8;
+      font-size: 10px; font-weight: 600; padding: 4px 2px;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .mts-bottom-nav button.active { color: #38bdf8; font-weight: 800; }
+
+    /* 바텀 도크 시트 */
+    .dock-backdrop {
+      position: absolute;
+      inset: 0 0 60px 0;
+      background: rgba(10, 20, 40, 0.48);
+      backdrop-filter: blur(2px);
+      z-index: 22;
+    }
+    .muse-dock {
+      position: absolute;
+      bottom: 60px; left: 0; right: 0;
+      height: 80%;
+      background: #ffffff;
+      border-top: 2px solid var(--primary);
+      border-radius: 22px 22px 0 0;
+      box-shadow: 0 -15px 45px rgba(15, 23, 42, 0.28);
+      display: flex;
+      flex-direction: column;
+      z-index: 25;
+      overflow: hidden;
+    }
+    .dock-handle {
+      width: 38px; height: 4px;
+      background: #cbd5e1; border-radius: 9px;
+      margin: 7px auto 4px; flex-shrink: 0;
+    }
+    .dock-header {
+      padding: 7px 16px 9px;
+      border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .dock-tabs {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      border-bottom: 1px solid var(--line);
+      background: var(--sub);
+      padding: 0 10px;
+    }
+    .dock-tabs button {
+      border: 0; border-bottom: 2.5px solid transparent;
+      background: transparent; border-radius: 0;
+      padding: 8px 4px; font-size: 11.5px; color: var(--muted);
+    }
+    .dock-tabs button.active {
+      color: var(--primary); border-bottom-color: var(--primary); font-weight: 800;
+    }
+    .dock-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 16px 24px;
+    }
+
+    /* 모달 및 토스트 */
+    .dialog-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(10, 20, 40, 0.65);
+      display: grid; place-items: center;
+      padding: 16px; z-index: 60;
+      backdrop-filter: blur(4px);
+    }
+    .dialog {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 18px;
+      width: min(100%, 440px);
+      max-height: 88vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.35);
+    }
+    .toast {
+      position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
+      background: #0f2557; color: #ffffff;
+      border: 1px solid #38bdf8;
+      padding: 10px 18px; border-radius: 12px;
+      font-weight: 700; font-size: 12.5px;
+      z-index: 80; box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+    }
+
+    /* 지표/범례 필 */
+    .ind-pill {
+      padding: 4px 8px;
+      font-size: 10.5px;
+      border-radius: 7px;
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      font-weight: 700;
+    }
+    .ind-pill.on {
+      background: #1d4ed8;
+      color: #ffffff;
+      border-color: #60a5fa;
+    }
+
+    /* 👵 어르신모드 전용 스타일 */
+    body.senior .phone { font-size: 16.5px; }
+    body.senior .muse-bar-text strong { font-size: 15px; }
+    body.senior .muse-bar-text small { font-size: 13px; }
+    body.senior button { min-height: 44px; font-size: 15px; }
+    body.senior .pro-only { display: none !important; }
+    body.senior .senior-big-card {
+      border: 2px solid #eab308;
+      background: #fefce8;
+      padding: 16px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 1180px) {
+      .shell { grid-template-columns: 280px minmax(390px, 455px); }
+      .aside-right { display: none; }
+    }
+    @media (max-width: 760px) {
+      .shell { display: block; margin: 0; padding: 0; }
+      .aside { display: none; }
+      .phone { height: 100dvh; max-height: none; border-radius: 0; border: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- 좌측: 발표 대본 네비게이터 & 원클릭 시연 컨트롤러 -->
+  <aside class="aside">
+    <div class="aside-card">
+      <div class="eyebrow">PRESENTATION CONTROLLER</div>
+      <h2 style="font-size:17.5px; margin:5px 0 6px; line-height:1.35;">현대차증권 AI Agent 『NAVI』<br>발표 대본 연동 시연 데크</h2>
+      <p style="font-size:11.5px; color:var(--muted); line-height:1.5;">
+        아래 발표 단계 버튼을 누르면 대본의 해당 시연 화면과 데이터가 즉시 세팅됩니다.
+      </p>
+
+      <div style="margin-top:10px;">
+        <button class="demo-btn" id="btnStep-slide4" onclick="runPresentationStep('slide4')">
+          <b><span>SLIDE 2~4 · What is NAVI & 4대 기능</span> <span class="time-badge">1:10~4:20</span></b>
+          포트폴리오 X-RAY · Signal Radar · Investment Memory · Action Assistant
+        </button>
+
+        <button class="demo-btn active-step" id="btnStep-demo1" onclick="runPresentationStep('demo1')">
+          <b><span>[시연 ①] 투자타이밍 분석</span> <span class="time-badge">5:00~6:10</span></b>
+          5·20·60·120일선 + 볼린저밴드 + RSI/MACD/ADX + 추세·눌림목·돌파 전략 비교
+        </button>
+
+        <button class="demo-btn" id="btnStep-demo2" onclick="runPresentationStep('demo2')">
+          <b><span>[시연 ②] 오토파일럿 규칙 설정</span> <span class="time-badge">6:10~7:15</span></b>
+          “관심종목만 총 100만 원, 한 번에 30만 원, 손절 4%, 익절 12%로 설정해 줘”
+        </button>
+
+        <button class="demo-btn" id="btnStep-demo3" onclick="runPresentationStep('demo3')">
+          <b><span>[시연 ③] 과거장 자동 재생 (핵심)</span> <span class="time-badge">7:15~8:40</span></b>
+          과거 시세 재생 ➔ 조건 매수 ➔ +12% 일부 익절 & 추세추종 ➔ 청산·비용·MDD 확인
+        </button>
+
+        <button class="demo-btn" id="btnStep-extra" onclick="runPresentationStep('extra')">
+          <b><span>[확장] X-RAY & 여행·부재 가드</span> <span class="time-badge">8:40~9:30</span></b>
+          반도체 편중(68.4%) 리밸런싱 · 장기 여행 중 자동 감시 · 개인화 학습 Memory
+        </button>
+      </div>
+    </div>
+
+    <!-- 발표자용 실시간 대본 프롬프터 -->
+    <div class="aside-card">
+      <div class="row" style="margin-bottom:6px;">
+        <span class="eyebrow">LIVE SCRIPT CUE (발표 대본 가이드)</span>
+        <span id="scriptSlideBadge" class="tag info">시연 ①</span>
+      </div>
+      <div class="script-box" id="scriptTeleprompter">
+        <strong>[시연 ① 투자타이밍 분석]</strong><br>
+        “보시는 것처럼 <strong>5일, 20일, 60일, 120일 이동평균선</strong>과 <strong>볼린저밴드</strong>를 확인할 수 있고, <strong>RSI와 MACD, ADX</strong> 등도 함께 분석합니다.<br>
+        단순 추세 진입뿐 아니라 <strong>눌림목 반등</strong>과 <strong>고점 돌파</strong> 전략을 선택할 수 있으며, 현재 진입 조건이 충족되었는지, 어떤 조건이 부족한지 설명합니다.”
+      </div>
+    </div>
+  </aside>
+
+  <!-- 중앙: 현대차증권 MTS 스마트폰 화면 -->
+  <main class="phone" id="phoneRoot"></main>
+
+  <!-- 우측: SLIDE 4 4대 핵심 기능 실시간 상태 및 에이전트 모니터 -->
+  <aside class="aside aside-right">
+    <div class="aside-card">
+      <div class="eyebrow">SLIDE 4 · NAVI 4 PILLARS STATUS</div>
+      <h3 style="font-size:14.5px; margin-top:4px;">NAVI 4대 핵심 엔진 실시간 상태</h3>
+      <div id="fourPillarsStatus" style="margin-top:10px; display:grid; gap:8px; font-size:11.5px;"></div>
+    </div>
+
+    <div class="aside-card">
+      <div class="eyebrow">AUTOPILOT & REPLAY TELEMETRY</div>
+      <h3 style="font-size:14.5px; margin-top:4px;">오토파일럿 · 실시간 판단 로그</h3>
+      <div id="agentInspector" style="font-size:11.5px; color:var(--muted); margin-top:8px; line-height:1.6;"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- 공통 모달 & 토스트 -->
+<div id="modal" class="dialog-backdrop hidden" hidden onclick="if(event.target===this)closeModal()">
+  <section class="dialog" role="dialog" aria-modal="true">
+    <div class="row" style="margin-bottom:12px;">
+      <h3 id="modalTitle" style="font-size:16px;"></h3>
+      <button class="ghost-btn" onclick="closeModal()" style="padding:3px 9px;">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </section>
+</div>
+<div id="toast" class="toast hidden" hidden></div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const won = n => Math.round(Number(n) || 0).toLocaleString('ko-KR') + '원';
+const num = n => Math.round(Number(n) || 0).toLocaleString('ko-KR');
+const pct = n => (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%';
+const clone = o => JSON.parse(JSON.stringify(o));
+
+/* ============================================================================
+ * 1. 종목 시드 및 180봉 시세 생성기 (5/20/60/120일 이평선 및 과거장 재생 완벽 지원)
+ * ============================================================================ */
+const SEED = {
+  DB: { name:'DB하이텍', code:'000990', price:131700, sector:'반도체', kind:'stock', eligible:false, beta:1.35, yield:0.012, pattern:'trend_cycle' },
+  RB: { name:'로보티즈', code:'108490', price:306000, sector:'로봇', kind:'stock', eligible:false, beta:1.5, yield:0, pattern:'pullback_cycle' },
+  SP: { name:'KODEX 미국S&P500', code:'379800', price:23955, sector:'글로벌ETF', kind:'etf', eligible:true, beta:1.0, yield:0.015, pattern:'steady_up' },
+  SS: { name:'삼성전자', code:'005930', price:273500, sector:'반도체', kind:'stock', eligible:false, beta:1.1, yield:0.018, pattern:'wait_dip' },
+  TS: { name:'티에스이', code:'131290', price:266500, sector:'반도체', kind:'stock', eligible:false, beta:1.45, yield:0.006, pattern:'overheated' },
+  DV: { name:'TIGER 미국배당다우존스', code:'458730', price:14815, sector:'배당ETF', kind:'etf', eligible:true, beta:0.72, yield:0.038, pattern:'steady_up' }
+};
+
+function generateHistory180(k) {
+  const s = SEED[k], a = [];
+  const total = 180;
+  for (let i = 0; i < total; i++) {
+    let r = 0.72;
+    if (s.pattern === 'trend_cycle') {
+      // 0~125: 완만한 상승 기반 구축 (120일선 < 60일선 < 20일선 형성)
+      // 126~179 (최근 54일 과거장 재생 구간):
+      // Day 130~136: 눌림목 후 거래량 실린 추세 진입 조건 완성!
+      // Day 137~156: 강한 상승 추세 전개 (+12% 목표가 돌파 후 +18%까지 추세 연장!)
+      // Day 157~166: 고점 부근에서 추세 약화 (20일선 및 보호가격 이탈 청산 구간)
+      // Day 167~179: 재차 20일선 지지 반등하며 현재 시점(Day 179)에서 진입 조건 재충족!
+      if (i <= 125) {
+        r = 0.68 + (i / 125) * 0.16 + Math.sin(i * 0.22) * 0.012;
+      } else {
+        const d = i - 125; // 1 ~ 54
+        if (d <= 6) r = 0.84 - (6 - d) * 0.003; // 살짝 다지기
+        else if (d <= 28) r = 0.84 + ((d - 6) / 22) * 0.165 + Math.sin(d * 0.4) * 0.005; // +19% 상승 랠리
+        else if (d <= 38) r = 1.005 - ((d - 28) / 10) * 0.058; // 추세 약화 / 보호가격 이탈 구간
+        else r = 0.947 + ((d - 38) / 16) * 0.053; // 현재 시점 재반등 완성
+      }
+    } else if (s.pattern === 'pullback_cycle') {
+      if (i <= 125) r = 0.70 + (i / 125) * 0.22 + Math.sin(i * 0.25) * 0.014;
+      else {
+        const d = i - 125;
+        if (d <= 12) r = 0.92 - Math.sin((d / 12) * Math.PI) * 0.025; // 20일선 눌림목 지지
+        else if (d <= 36) r = 0.92 + ((d - 12) / 24) * 0.15;
+        else if (d <= 44) r = 1.07 - ((d - 36) / 8) * 0.045;
+        else r = 1.025 + ((d - 44) / 10) * 0.025;
+      }
+    } else if (s.pattern === 'wait_dip') {
+      r = 1.09 - (i / total) * 0.09 + Math.sin(i * 0.28) * 0.015;
+    } else if (s.pattern === 'overheated') {
+      r = 0.68 + (i / total) * 0.20 + (i > 162 ? Math.pow((i - 162) / 17, 2) * 0.16 : 0);
+    } else {
+      r = 0.78 + (i / total) * 0.22 + Math.sin(i * 0.24) * 0.008;
+    }
+
+    const c = Math.round(s.price * r);
+    const prevC = i ? a[i - 1].c : Math.round(c * 0.996);
+    const isBull = c >= prevC;
+    const o = Math.round(isBull ? prevC * 0.998 : prevC * 1.002);
+    const h = Math.round(Math.max(c, o) * (1.008 + (i % 5 === 0 ? 0.005 : 0)));
+    const l = Math.round(Math.min(c, o) * (0.992 - (i % 7 === 0 ? 0.004 : 0)));
+
+    // 거래량: 진입 돌파 구간과 최근 봉에서 거래량 급증
+    let vMult = 1 + Math.sin(i * 0.6) * 0.22;
+    if ((i >= 132 && i <= 138) || i >= 176) vMult = 1.85;
+    const v = Math.round(95000 * vMult);
+
+    // 날짜 생성 (최근 180 영업일)
+    const dt = new Date(2026, 10, 3);
+    dt.setDate(dt.getDate() - (total - 1 - i));
+    const dateStr = `${String(dt.getMonth() + 1).padStart(2, '0')}.${String(dt.getDate()).padStart(2, '0')}`;
+
+    a.push({ o, h, l, c, v, date: dateStr });
+  }
+  const scale = s.price / a[total - 1].c;
+  return a.map(x => ({
+    ...x,
+    o: Math.round(x.o * scale),
+    h: Math.round(x.h * scale),
+    l: Math.round(x.l * scale),
+    c: Math.round(x.c * scale)
+  }));
+}
+
+/* ============================================================================
+ * 2. 기술적 분석 엔진 (MA 5/20/60/120, 볼린저밴드, Wilder RSI, MACD, ADX, ATR)
+ * ============================================================================ */
+const signalCache = new WeakMap();
+
+function ma(a, n, i = a.length - 1) {
+  if (i < 0) return null;
+  const start = Math.max(0, i - n + 1);
+  const slice = a.slice(start, i + 1);
+  return slice.reduce((acc, cur) => acc + cur.c, 0) / slice.length;
+}
+
+function emaSeries(values, n) {
+  const out = Array(values.length).fill(null);
+  let seed = [], prev = null;
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v === null || !Number.isFinite(v)) continue;
+    if (prev === null) {
+      seed.push(v);
+      if (seed.length === n) { prev = seed.reduce((a, b) => a + b, 0) / n; out[i] = prev; }
+    } else {
+      prev += (2 / (n + 1)) * (v - prev);
+      out[i] = prev;
+    }
+  }
+  return out;
+}
+
+function computedSeries(a) {
+  const sigKey = a.length + ':' + (a.at(-1)?.c || 0);
+  const cached = signalCache.get(a);
+  if (cached?.sigKey === sigKey) return cached;
+
+  const n = a.length, c = a.map(x => x.c);
+  const e12 = emaSeries(c, 12), e26 = emaSeries(c, 26);
+  const macd = c.map((_, i) => e12[i] !== null && e26[i] !== null ? e12[i] - e26[i] : 0);
+  const sig = emaSeries(macd, 9).map(v => v ?? 0);
+  const hist = macd.map((v, i) => v - sig[i]);
+
+  const rsi = Array(n).fill(50), atr = Array(n).fill(0), plus = Array(n).fill(22), minus = Array(n).fill(18), adx = Array(n).fill(22), bb = Array(n).fill(null);
+  let ag = 0, al = 0, trAvg = 0, dmP = 0, dmM = 0, dxSeed = [];
+
+  for (let i = 0; i < n; i++) {
+    const winStart = Math.max(0, i - 19);
+    const win = c.slice(winStart, i + 1);
+    const mid = win.reduce((s, v) => s + v, 0) / win.length;
+    const sd = Math.sqrt(win.reduce((s, v) => s + (v - mid) ** 2, 0) / win.length);
+    bb[i] = {
+      mid,
+      upper: mid + 2 * sd,
+      lower: mid - 2 * sd,
+      width: mid ? (4 * sd / mid) * 100 : 0,
+      percent: sd ? (c[i] - (mid - 2 * sd)) / (4 * sd) : 0.5
+    };
+
+    if (!i) {
+      atr[0] = Math.round(c[0] * 0.02);
+      continue;
+    }
+    const delta = c[i] - c[i - 1], up = Math.max(0, delta), down = Math.max(0, -delta);
+    const tr = Math.max(a[i].h - a[i].l, Math.abs(a[i].h - c[i - 1]), Math.abs(a[i].l - c[i - 1]));
+    const u = a[i].h - a[i - 1].h, d = a[i - 1].l - a[i].l;
+    const dp = u > d && u > 0 ? u : 0, dm = d > u && d > 0 ? d : 0;
+
+    if (i <= 14) {
+      ag += up / 14; al += down / 14; trAvg += tr / 14; dmP += dp / 14; dmM += dm / 14;
+      atr[i] = trAvg || Math.round(c[i] * 0.02);
+    } else {
+      ag = (ag * 13 + up) / 14;
+      al = (al * 13 + down) / 14;
+      trAvg = (trAvg * 13 + tr) / 14;
+      dmP = (dmP * 13 + dp) / 14;
+      dmM = (dmM * 13 + dm) / 14;
+      rsi[i] = ag === 0 && al === 0 ? 50 : al === 0 ? 100 : 100 - 100 / (1 + ag / al);
+      atr[i] = trAvg;
+      plus[i] = trAvg ? (100 * dmP) / trAvg : 20;
+      minus[i] = trAvg ? (100 * dmM) / trAvg : 18;
+      const dxVal = (plus[i] + minus[i]) ? (100 * Math.abs(plus[i] - minus[i])) / (plus[i] + minus[i]) : 20;
+      if (i < 28) dxSeed.push(dxVal);
+      else if (i === 28) adx[i] = dxSeed.reduce((s, v) => s + v, 0) / dxSeed.length;
+      else adx[i] = (adx[i - 1] * 13 + dxVal) / 14;
+    }
+  }
+  const res = { sigKey, rsi, atr, plus, minus, adx, macd, sig, hist, bb };
+  signalCache.set(a, res);
+  return res;
+}
+
+function analyze(k, i = S.markets[k].length - 1) {
+  const ar = S.markets[k];
+  i = Math.max(0, Math.min(i, ar.length - 1));
+  const z = computedSeries(ar), p = ar[i].c;
+  const m5 = ma(ar, 5, i), m20 = ma(ar, 20, i), m60 = ma(ar, 60, i), m120 = ma(ar, 120, i);
+  const prev20 = ma(ar, 20, Math.max(0, i - 4));
+  const vWin = ar.slice(Math.max(0, i - 20), i);
+  const vAvg = vWin.length ? vWin.reduce((s, x) => s + x.v, 0) / vWin.length : ar[i].v;
+  const volRatio = ar[i].v / (vAvg || 1);
+
+  const trend = !!(p > m20 && m20 >= m60 && m60 >= m120 * 0.98 && m20 >= prev20);
+  const atr = z.atr[i] || Math.round(p * 0.022);
+  const band = z.bb[i];
+  const adx = z.adx[i] || 22;
+  const high20 = i > 1 ? Math.max(...ar.slice(Math.max(0, i - 18), i).map(x => x.h)) : p;
+  const r = z.rsi[i] ?? 54;
+  const hot = !!(p / m20 > 1.095 || band.percent > 1.06 || r > 74);
+
+  return {
+    i, p, date: ar[i].date,
+    m5, m20, m60, m120,
+    r, v: volRatio, high20, atr, trend, hot,
+    bb: band, adx, plusDI: z.plus[i], minusDI: z.minus[i],
+    macd: z.macd[i], macdSignal: z.sig[i], macdHist: z.hist[i]
+  };
+}
+
+/* ============================================================================
+ * 3. 3대 전략(추세 진입 / 눌림목 반등 / 고점 돌파) 판정 및 한국어 근거 생성기
+ * ============================================================================ */
+function evaluateStrategy(k, strategy = 'trend', i = S.markets[k].length - 1) {
+  const a = analyze(k, i);
+  const ar = S.markets[k], prev = i > 0 ? ar[i - 1].c : a.p;
+
+  const maAligned = a.p > a.m20 && a.m20 >= a.m60 * 0.995 && a.m60 >= a.m120 * 0.985;
+  const momOK = a.r >= 44 && a.r <= 72 && (a.macdHist >= -50 || a.macd > a.macdSignal);
+  const notOverheated = !a.hot && a.bb.percent <= 0.98;
+  const volTrustOK = a.adx >= 18 && a.v >= (strategy === 'breakout' ? 1.35 : 1.08);
+
+  let stratSpecificOK = true;
+  let stratName = '단순 추세 진입';
+  let stratDesc = '';
+
+  if (strategy === 'trend') {
+    stratName = '단순 추세 진입';
+    stratSpecificOK = maAligned && a.p >= a.m5 * 0.995;
+    stratDesc = stratSpecificOK
+      ? '5·20·60·120일 이동평균선이 정배열 상승 흐름을 형성했습니다.'
+      : '이동평균선 정배열(20>60>120일선) 또는 20일선 안착이 아직 완성되지 않았습니다.';
+  } else if (strategy === 'pullback') {
+    stratName = '눌림목 반등';
+    const nearMA20 = a.p >= a.m20 * 0.985 && a.p <= a.m20 * 1.045;
+    const bounceCandle = a.p >= prev && a.m60 >= a.m120 * 0.98;
+    stratSpecificOK = nearMA20 && bounceCandle;
+    stratDesc = stratSpecificOK
+      ? '장기 상승추세(60>120일선) 위에서 20일선 눌림목 지지 후 반등 양봉이 확인되었습니다.'
+      : (a.p > a.m20 * 1.045 ? '현재 주가가 20일선 대비 떠 있어 눌림목 타점(20일선 근접)을 기다려야 합니다.' : '20일선 지지 후 양봉 반등 확인이 아직 부족합니다.');
+  } else if (strategy === 'breakout') {
+    stratName = '고점 돌파';
+    stratSpecificOK = a.p >= a.high20 * 0.995 && a.v >= 1.35;
+    stratDesc = stratSpecificOK
+      ? `거래량(${a.v.toFixed(2)}배)을 동반하며 최근 20일 고점(${won(a.high20)})을 강하게 돌파했습니다.`
+      : `최근 고점(${won(a.high20)}) 돌파 및 거래량 1.35배 이상 수반(현재 ${a.v.toFixed(2)}배) 조건이 아직 부족합니다.`;
+  }
+
+  const checks = [
+    {
+      label: '이동평균선 추세 방향 (5·20·60·120일)',
+      ok: maAligned,
+      detail: `5일 ${won(a.m5)} · 20일 ${won(a.m20)} · 60일 ${won(a.m60)} · 120일 ${won(a.m120)}`
+    },
+    {
+      label: '모멘텀 확인 (RSI · MACD)',
+      ok: momOK,
+      detail: `RSI ${a.r.toFixed(1)} · MACD ${a.macd >= 0 ? '+' : ''}${Math.round(a.macd)} (Hist ${a.macdHist >= 0 ? '+' : ''}${Math.round(a.macdHist)})`
+    },
+    {
+      label: '볼린저밴드 과열 여부',
+      ok: notOverheated,
+      detail: `밴드 내 위치 ${(a.bb.percent * 100).toFixed(0)}% (${a.hot ? '단기 과열' : '정상 범위'})`
+    },
+    {
+      label: '추세 신뢰도 · 거래량 (ADX · 수급)',
+      ok: volTrustOK,
+      detail: `ADX ${a.adx.toFixed(1)} · 평균 대비 거래량 ${a.v.toFixed(2)}배`
+    },
+    {
+      label: `[${stratName}] 타점 조건`,
+      ok: stratSpecificOK,
+      detail: stratDesc
+    }
+  ];
+
+  const ready = checks.every(c => c.ok);
+  const lacking = checks.filter(c => !c.ok);
+
+  // 타이밍 종합 점수 산출
+  let score = 45;
+  if (maAligned) score += 16;
+  if (momOK) score += 13;
+  if (notOverheated) score += 10; else score -= 12;
+  if (volTrustOK) score += 10;
+  if (stratSpecificOK) score += 8;
+  score = Math.max(25, Math.min(96, score));
+
+  let summaryVerdict = '';
+  if (ready) {
+    summaryVerdict = `✅ [${stratName}] 진입 조건 충족! 이동평균선 정배열 추세와 모멘텀(RSI ${a.r.toFixed(1)}), 거래량(${a.v.toFixed(2)}배)이 모두 확인되었습니다.`;
+  } else if (a.hot) {
+    summaryVerdict = `🔴 단기 과열 구간입니다. 볼린저밴드 상단(${(a.bb.percent * 100).toFixed(0)}%) 및 이격도 과열로 추격 매수를 보류하고 20일선 눌림목을 기다리세요.`;
+  } else {
+    summaryVerdict = `🟡 현재 [${lacking.map(x => x.label.split(' ')[0]).join(', ')}] 조건이 부족합니다. ${stratDesc}`;
+  }
+
+  return { a, strategy, stratName, checks, ready, lacking, score, summaryVerdict };
+}
+
+/* ============================================================================
+ * 4. 앱 전역 상태 (시연 ①, ②, ③ 및 4대 기능 데이터)
+ * ============================================================================ */
+function createInitialState() {
+  const markets = Object.fromEntries(Object.keys(SEED).map(k => [k, generateHistory180(k)]));
+  return {
+    selected: 'DB',
+    account: 'cma',
+    cash: 1500000,
+    holdings: {
+      DB: { qty: 14, avg: 123200 },
+      SS: { qty: 5, avg: 285000 },
+      DV: { qty: 30, avg: 14200 }
+    },
+    markets,
+    watch: ['DB', 'RB', 'SP', 'SS', 'TS', 'DV'],
+    // [시연 ②] 오토파일럿 규칙 설정 상태 (대본 기본값: 관심종목만 총 100만원, 한 번에 30만원, 손절 4%, 익절 12%)
+    autopilot: {
+      enabled: false,
+      nlCommand: '관심종목만 총 100만 원, 한 번에 30만 원, 손절 4%, 익절 12%로 오토파일럿 설정해 줘.',
+      targetKeys: ['DB', 'RB', 'SP'],
+      totalBudget: 1000000,
+      perOrderAmount: 300000,
+      stopLossPct: 4.0,
+      takeProfitPct: 12.0,
+      strategy: 'trend',
+      trailAfterPartial: true
+    },
+    // [시연 ③] 과거장 자동 재생 (Historical Auto-Replay) 상태
+    replay: {
+      k: 'DB',
+      startIndex: 125,     // 180봉 중 125봉부터 179봉까지 55일 재생
+      curIndex: 125,
+      playing: false,
+      speedMs: 550,
+      budgetTotal: 1000000,
+      cashRemaining: 1000000,
+      position: null,      // { qty, initialQty, avgPrice, stopPrice, targetPrice, partialTaken, highPrice }
+      realizedPnl: 0,
+      totalFees: 0,
+      peakEquity: 1000000,
+      mddPct: 0,
+      markers: [],         // 차트 위 매매 마커: { idx, type: 'BUY'|'PARTIAL'|'EXIT', price, label }
+      events: [],          // 상세 매매 및 판단 로그
+      statusBanner: '과거장 재생 대기 중 · [▶ 과거장 자동 재생] 버튼을 누르면 매일의 시세와 지표를 점검하며 모의 자동매매를 수행합니다.'
+    },
+    // SLIDE 4 · Investment Memory (개인화 기억 모델)
+    memory: {
+      persona: '펀더멘털 + 추세추종 결합형 (일임운용·가치투자 기반)',
+      coreQuestion: '좋은 종목인 건 알겠는데, 그래서 지금 사도 되나?',
+      jinxGuard: '급등주 고점 추격매수(볼린저 상단 돌파 과열) 시 승률 28% ➔ 과열 시 진입 제한',
+      awayGuard: false,
+      awayLocation: '국내 체류 (상시 감시)',
+      sectorLimit: 60
+    },
+    plans: [],
+    logs: [
+      { at: '방금', title: 'NAVI 에이전트 부팅 완료', detail: '이동평균선(5·20·60·120), 볼린저밴드, RSI, MACD, ADX 분석 엔진 가동 중' }
+    ],
+    messages: [],
+    prefs: { mode: 'standard' }
+  };
+}
+
+let S = createInitialState();
+let HS = {
+  page: 'stock',          // 'home' | 'stock' | 'autopilot' | 'order' | 'balance'
+  activeDemoStep: 'demo1',
+  strategy: 'trend',      // 'trend' | 'pullback' | 'breakout'
+  indicators: { ma: true, bb: true, vol: true },
+  taSub: 'rsi',           // 'rsi' | 'macd' | 'adx'
+  dock: false,
+  dockView: 'autopilot',  // 'autopilot' | 'action' | 'chat'
+  order: { k: 'DB', side: 'buy', qty: 2 },
+  draft: null
+};
+
+let replayTimer = null;
+const senior = () => S.prefs.mode === 'senior';
+const price = k => S.markets[k].at(-1).c;
+
+/* ============================================================================
+ * 5. 계좌 및 포트폴리오 X-RAY 계산기
+ * ============================================================================ */
+function account() {
+  let held = 0, cost = 0, sectors = {};
+  for (const [k, h] of Object.entries(S.holdings)) {
+    if (!h || h.qty <= 0) continue;
+    const v = h.qty * price(k);
+    held += v;
+    cost += h.qty * h.avg;
+    sectors[SEED[k].sector] = (sectors[SEED[k].sector] || 0) + v;
+  }
+  const nav = held + S.cash;
+  const semi = nav ? ((sectors['반도체'] || 0) / nav) * 100 : 0;
+  const cashRatio = nav ? (S.cash / nav) * 100 : 0;
+  const xrayScore = semi > 60 ? 68 : 86;
+  return { held, cost, nav, pnl: held - cost, sectors, semi, cashRatio, xrayScore };
+}
+
+/* ============================================================================
+ * 6. 발표 단계 원클릭 네비게이터 (좌측 컨트롤러 연동)
+ * ============================================================================ */
+const SCRIPT_CUES = {
+  slide4: {
+    badge: 'SLIDE 2~4 (1:10~4:20)',
+    html: `<strong>[SLIDE 4. NAVI가 제공하는 4대 기능]</strong><br>
+    ① <strong>포트폴리오 X-RAY</strong>: 보유자산·업종 편중·현금비중 분석<br>
+    ② <strong>Signal Radar</strong>: 추세추종·기술적 분석으로 투자타이밍 판단<br>
+    ③ <strong>Investment Memory</strong>: 투자성향·습관·목표까지 기억하고 활용<br>
+    ④ <strong>Action Assistant</strong>: 매매계획과 모의 자동매매 <strong>오토파일럿</strong> 연결`
+  },
+  demo1: {
+    badge: '시연 ① (5:00~6:10)',
+    html: `<strong>[시연 ① 투자타이밍 분석]</strong><br>
+    “관심종목 차트 화면입니다. <strong>5일, 20일, 60일, 120일 이동평균선</strong>과 <strong>볼린저밴드</strong>를 확인할 수 있고, <strong>RSI와 MACD, ADX</strong>도 함께 분석합니다.<br>
+    단순 <strong>추세 진입</strong>뿐 아니라 <strong>눌림목 반등</strong>과 <strong>고점 돌파</strong> 전략을 선택할 수 있으며, 현재 진입 조건이 충족되었는지, 어떤 조건이 부족한지 설명합니다.”`
+  },
+  demo2: {
+    badge: '시연 ② (6:10~7:15)',
+    html: `<strong>[시연 ② 오토파일럿 설정]</strong><br>
+    “고객이 일일이 주문하는 대신 투자 원칙을 정해 맡깁니다.<br>
+    <strong>‘관심종목만 총 100만 원, 한 번에 30만 원, 손절 4%, 익절 12%로 오토파일럿 설정해 줘’</strong>라고 요청하면 NAVI가 투자규칙으로 정리하고 확인 후 모의 매매를 수행합니다.”`
+  },
+  demo3: {
+    badge: '시연 ③ (7:15~8:40)',
+    html: `<strong>[시연 ③ 과거장 자동 재생]</strong><br>
+    “과거장을 재생하면 매일의 가격과 기술적 지표를 확인해 조건 충족 시 매수합니다. 매수 후 <strong>목표(+12%) 도달 시 일부(50%) 익절</strong>한 뒤 나머지는 <strong>추세를 따라가도록</strong> 했고, <strong>보호가격 이탈·추세 약화 시 청산</strong>합니다. 거래비용·손익·최대낙폭(MDD)까지 투명하게 확인됩니다.”`
+  },
+  extra: {
+    badge: '마무리·확장 (8:40~9:30)',
+    html: `<strong>[포트폴리오 X-RAY & 개인화 AI Agent]</strong><br>
+    “장기간 여행을 가거나 시장을 확인하기 어려운 상황에서도 NAVI가 관심종목을 점검하며, 궁극적으로는 고객의 투자 의도를 이해하고 함께 투자하는 <strong>개인화 AI Agent</strong>로 발전시키는 것이 목표입니다.”`
+  }
+};
+
+function runPresentationStep(step) {
+  stopReplayTimer();
+  HS.activeDemoStep = step;
+  document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active-step'));
+  const activeBtn = $('btnStep-' + step);
+  if (activeBtn) activeBtn.classList.add('active-step');
+
+  const cue = SCRIPT_CUES[step] || SCRIPT_CUES.demo1;
+  if ($('scriptSlideBadge')) $('scriptSlideBadge').textContent = cue.badge;
+  if ($('scriptTeleprompter')) $('scriptTeleprompter').innerHTML = cue.html;
+
+  if (step === 'slide4') {
+    HS.page = 'home';
+    HS.dock = false;
+    render();
+    toast('SLIDE 4: NAVI 4대 핵심 기능 대시보드로 이동했습니다.');
+  } else if (step === 'demo1') {
+    S.selected = 'DB';
+    HS.page = 'stock';
+    HS.strategy = 'trend';
+    HS.indicators = { ma: true, bb: true, vol: true };
+    HS.dock = false;
+    render();
+    toast('[시연 ①] 5·20·60·120일 이평선 & 다중지표 투자타이밍 분석 화면입니다.');
+  } else if (step === 'demo2') {
+    S.selected = 'DB';
+    HS.page = 'autopilot';
+    HS.dock = false;
+    parseAutopilotCommand(S.autopilot.nlCommand, true);
+    render();
+    toast('[시연 ②] 자연어 명령으로 오토파일럿 투자규칙(100만/30만/-4%/+12%)을 생성했습니다.');
+  } else if (step === 'demo3') {
+    S.selected = 'DB';
+    S.autopilot.enabled = true;
+    HS.page = 'autopilot';
+    HS.dock = false;
+    resetReplaySimulation('DB', false);
+    render();
+    startReplaySimulation();
+    toast('[시연 ③] 과거장 자동 재생을 시작합니다! (매수 ➔ +12% 일부익절 ➔ 추세추종 ➔ 청산)');
+  } else if (step === 'extra') {
+    HS.page = 'balance';
+    HS.dock = false;
+    render();
+    toast('[확장 시연] 포트폴리오 X-RAY 및 여행·부재 가드 화면입니다.');
+  }
+}
+
+/* ============================================================================
+ * 7. [시연 ①] 차트 렌더링 (MA 5/20/60/120 + 볼린저밴드 + 거래량 + 목표/보호선 + 마커)
+ * ============================================================================ */
+function renderAdvancedChartSVG(k, endIndex = S.markets[k].length - 1, overlayReplay = false) {
+  const ar = S.markets[k];
+  const end = Math.min(ar.length - 1, Math.max(40, endIndex));
+  const count = 42;
+  const first = Math.max(0, end - count + 1);
+  const rows = ar.slice(first, end + 1);
+  const z = computedSeries(ar);
+
+  const pos = overlayReplay ? S.replay.position : null;
+  let lo = Infinity, hi = -Infinity;
+
+  rows.forEach((d, idx) => {
+    const gi = first + idx;
+    const m120 = ma(ar, 120, gi) || d.l;
+    const bUp = z.bb[gi]?.upper || d.h;
+    const bLo = z.bb[gi]?.lower || d.l;
+    lo = Math.min(lo, d.l, m120, HS.indicators.bb ? bLo : d.l);
+    hi = Math.max(hi, d.h, m120, HS.indicators.bb ? bUp : d.h);
+  });
+
+  if (pos) {
+    lo = Math.min(lo, pos.stopPrice * 0.99);
+    hi = Math.max(hi, pos.targetPrice * 1.01);
+  }
+  const pad = (hi - lo) * 0.08 || 1000;
+  lo -= pad; hi += pad;
+
+  const W = 400, H = 252;
+  const chartTop = 14, chartBottom = 162, chartH = chartBottom - chartTop;
+  const subTop = 188, subBottom = 242, subH = subBottom - subTop;
+  const Y = v => chartBottom - ((v - lo) / (hi - lo || 1)) * chartH;
+  const X = j => 14 + j * (336 / Math.max(1, rows.length - 1));
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%; background:#091326; border:1px solid #1e293b; border-radius:14px; display:block;">`;
+
+  // 배경 가격 그리드
+  for (let t = 0; t <= 3; t++) {
+    const v = lo + ((hi - lo) * t) / 3;
+    const y = Y(v).toFixed(1);
+    svg += `<line x1="10" x2="352" y1="${y}" y2="${y}" stroke="#1e293b" stroke-dasharray="2,2"/>`;
+    svg += `<text x="355" y="${Number(y) + 3}" fill="#64748b" font-size="8.5" class="mono">${num(v)}</text>`;
+  }
+
+  // 볼린저밴드 (20, 2) 영역 및 상/하단선
+  if (HS.indicators.bb) {
+    const upPts = rows.map((_, j) => `${X(j).toFixed(1)},${Y(z.bb[first + j].upper).toFixed(1)}`);
+    const loPts = rows.map((_, j) => `${X(j).toFixed(1)},${Y(z.bb[first + j].lower).toFixed(1)}`);
+    svg += `<polygon points="${upPts.concat([...loPts].reverse()).join(' ')}" fill="#38bdf8" opacity="0.11"/>`;
+    svg += `<polyline fill="none" stroke="#0284c7" stroke-width="1" stroke-dasharray="2,2" points="${upPts.join(' ')}"/>`;
+    svg += `<polyline fill="none" stroke="#0284c7" stroke-width="1" stroke-dasharray="2,2" points="${loPts.join(' ')}"/>`;
+  }
+
+  // 거래량 바 (하단부에 은은하게)
+  if (HS.indicators.vol) {
+    const maxV = Math.max(...rows.map(r => r.v), 1);
+    rows.forEach((d, j) => {
+      const vh = (d.v / maxV) * 26;
+      const col = d.c >= d.o ? '#ef4444' : '#3b82f6';
+      svg += `<rect x="${(X(j) - 2.3).toFixed(1)}" y="${(chartBottom - vh).toFixed(1)}" width="4.6" height="${vh.toFixed(1)}" fill="${col}" opacity="0.22"/>`;
+    });
+  }
+
+  // 캔들스틱
+  rows.forEach((d, j) => {
+    const col = d.c >= d.o ? '#ef4444' : '#3b82f6';
+    const x = X(j).toFixed(1);
+    const yTop = Y(Math.max(d.o, d.c)).toFixed(1);
+    const bodyH = Math.max(1.8, Math.abs(Y(d.o) - Y(d.c))).toFixed(1);
+    svg += `<line x1="${x}" x2="${x}" y1="${Y(d.h).toFixed(1)}" y2="${Y(d.l).toFixed(1)}" stroke="${col}" stroke-width="1.15"/>`;
+    svg += `<rect x="${(X(j) - 2.6).toFixed(1)}" y="${yTop}" width="5.2" height="${bodyH}" fill="${col}" rx="0.8"/>`;
+  });
+
+  // 5일, 20일, 60일, 120일 이동평균선
+  if (HS.indicators.ma) {
+    const maConfigs = [
+      { period: 120, color: '#94a3b8', width: 1.3, dash: '3,2' },
+      { period: 60,  color: '#a855f7', width: 1.5, dash: '' },
+      { period: 20,  color: '#f59e0b', width: 2.0, dash: '' },
+      { period: 5,   color: '#2dd4bf', width: 1.4, dash: '' }
+    ];
+    maConfigs.forEach(cfg => {
+      const pts = rows.map((_, j) => `${X(j).toFixed(1)},${Y(ma(ar, cfg.period, first + j)).toFixed(1)}`).join(' ');
+      svg += `<polyline fill="none" stroke="${cfg.color}" stroke-width="${cfg.width}" ${cfg.dash ? `stroke-dasharray="${cfg.dash}"` : ''} points="${pts}"/>`;
+    });
+  }
+
+  // 과거장 재생 또는 현재 포지션의 목표가 / 매수가 / 보호가격(손절가) 오버레이
+  if (pos) {
+    const yTarget = Y(pos.targetPrice).toFixed(1);
+    const yAvg = Y(pos.avgPrice).toFixed(1);
+    const yStop = Y(pos.stopPrice).toFixed(1);
+
+    svg += `<line x1="10" x2="350" y1="${yTarget}" y2="${yTarget}" stroke="#10b981" stroke-width="1.3" stroke-dasharray="4,3"/>`;
+    svg += `<rect x="12" y="${Number(yTarget) - 12}" width="128" height="12" rx="3" fill="#064e3b" opacity="0.9"/>`;
+    svg += `<text x="16" y="${Number(yTarget) - 3}" fill="#6ee7b7" font-size="8.5" font-weight="bold">목표(+12%) ${won(pos.targetPrice)}</text>`;
+
+    svg += `<line x1="10" x2="350" y1="${yAvg}" y2="${yAvg}" stroke="#38bdf8" stroke-width="1.1" stroke-dasharray="2,2"/>`;
+
+    svg += `<line x1="10" x2="350" y1="${yStop}" y2="${yStop}" stroke="#f43f5e" stroke-width="1.4" stroke-dasharray="4,2"/>`;
+    svg += `<rect x="12" y="${Number(yStop) + 2}" width="165" height="12" rx="3" fill="#881337" opacity="0.9"/>`;
+    svg += `<text x="16" y="${Number(yStop) + 11}" fill="#fda4af" font-size="8.5" font-weight="bold">${pos.partialTaken ? '추세추종 보호가' : '손절 보호가(-4%)'} ${won(pos.stopPrice)}</text>`;
+  }
+
+  // 과거장 매매 마커 (매수 / 50%익절 / 청산)
+  if (overlayReplay && S.replay.markers.length) {
+    S.replay.markers.forEach(m => {
+      if (m.idx < first || m.idx > end) return;
+      const j = m.idx - first;
+      const cx = X(j);
+      const cy = Y(m.price);
+      const bg = m.type === 'BUY' ? '#ef4444' : (m.type === 'PARTIAL' ? '#10b981' : '#3b82f6');
+      const yOffset = m.type === 'BUY' ? 16 : -14;
+      svg += `<circle cx="${cx}" cy="${cy}" r="4.2" fill="${bg}" stroke="#ffffff" stroke-width="1.3"/>`;
+      svg += `<rect x="${Math.max(8, Math.min(310, cx - 28))}" y="${cy + yOffset - 9}" width="58" height="13" rx="4" fill="${bg}"/>`;
+      svg += `<text x="${Math.max(37, Math.min(339, cx))}" y="${cy + yOffset}" text-anchor="middle" fill="#ffffff" font-size="8.2" font-weight="bold">${esc(m.label)}</text>`;
+    });
+  }
+
+  // 하단 보조지표 서브차트 (RSI / MACD / ADX)
+  svg += `<line x1="10" x2="390" y1="174" y2="174" stroke="#1e293b"/>`;
+  const lastA = analyze(k, end);
+
+  if (HS.taSub === 'rsi') {
+    const YSub = v => subBottom - (v / 100) * subH;
+    svg += `<line x1="10" x2="352" y1="${YSub(70)}" y2="${YSub(70)}" stroke="#ef4444" stroke-opacity="0.35" stroke-dasharray="2,2"/>`;
+    svg += `<line x1="10" x2="352" y1="${YSub(30)}" y2="${YSub(30)}" stroke="#3b82f6" stroke-opacity="0.35" stroke-dasharray="2,2"/>`;
+    const pts = rows.map((_, j) => `${X(j).toFixed(1)},${YSub(z.rsi[first + j]).toFixed(1)}`).join(' ');
+    svg += `<polyline fill="none" stroke="#38bdf8" stroke-width="1.7" points="${pts}"/>`;
+    svg += `<text x="12" y="185" fill="#94a3b8" font-size="9" font-weight="bold">RSI(14): <tspan fill="#38bdf8">${lastA.r.toFixed(1)}</tspan> (과열 70 / 침체 30)</text>`;
+  } else if (HS.taSub === 'macd') {
+    const maxM = Math.max(10, ...rows.map((_, j) => Math.max(Math.abs(z.macd[first + j]), Math.abs(z.sig[first + j]), Math.abs(z.hist[first + j]))));
+    const midY = (subTop + subBottom) / 2;
+    const YSub = v => midY - (v / maxM) * (subH / 2);
+    svg += `<line x1="10" x2="352" y1="${midY}" y2="${midY}" stroke="#334155"/>`;
+    rows.forEach((_, j) => {
+      const hVal = z.hist[first + j];
+      const barH = Math.max(1, (Math.abs(hVal) / maxM) * (subH / 2));
+      const y = hVal >= 0 ? midY - barH : midY;
+      svg += `<rect x="${(X(j) - 2).toFixed(1)}" y="${y.toFixed(1)}" width="4" height="${barH.toFixed(1)}" fill="${hVal >= 0 ? '#ef4444' : '#3b82f6'}" opacity="0.75"/>`;
+    });
+    const mPts = rows.map((_, j) => `${X(j).toFixed(1)},${YSub(z.macd[first + j]).toFixed(1)}`).join(' ');
+    const sPts = rows.map((_, j) => `${X(j).toFixed(1)},${YSub(z.sig[first + j]).toFixed(1)}`).join(' ');
+    svg += `<polyline fill="none" stroke="#f59e0b" stroke-width="1.4" points="${mPts}"/>`;
+    svg += `<polyline fill="none" stroke="#38bdf8" stroke-width="1.2" points="${sPts}"/>`;
+    svg += `<text x="12" y="185" fill="#94a3b8" font-size="9" font-weight="bold">MACD(12,26,9): <tspan fill="#f59e0b">${Math.round(lastA.macd)}</tspan> / Signal <tspan fill="#38bdf8">${Math.round(lastA.macdSignal)}</tspan> / Osc <tspan fill="${lastA.macdHist >= 0 ? '#ef4444' : '#3b82f6'}">${lastA.macdHist >= 0 ? '+' : ''}${Math.round(lastA.macdHist)}</tspan></text>`;
+  } else {
+    const YSub = v => subBottom - (Math.min(70, v) / 70) * subH;
+    svg += `<line x1="10" x2="352" y1="${YSub(20)}" y2="${YSub(20)}" stroke="#f59e0b" stroke-opacity="0.4" stroke-dasharray="2,2"/>`;
+    const adxPts = rows.map((_, j) => `${X(j).toFixed(1)},${YSub(z.adx[first + j]).toFixed(1)}`).join(' ');
+    const pPts = rows.map((_, j) => `${X(j).toFixed(1)},${YSub(z.plus[first + j]).toFixed(1)}`).join(' ');
+    const mPts = rows.map((_, j) => `${X(j).toFixed(1)},${YSub(z.minus[first + j]).toFixed(1)}`).join(' ');
+    svg += `<polyline fill="none" stroke="#f59e0b" stroke-width="1.8" points="${adxPts}"/>`;
+    svg += `<polyline fill="none" stroke="#ef4444" stroke-width="1.1" stroke-dasharray="2,2" points="${pPts}"/>`;
+    svg += `<polyline fill="none" stroke="#3b82f6" stroke-width="1.1" stroke-dasharray="2,2" points="${mPts}"/>`;
+    svg += `<text x="12" y="185" fill="#94a3b8" font-size="9" font-weight="bold">ADX(14) 추세강도: <tspan fill="#f59e0b">${lastA.adx.toFixed(1)}</tspan> (+DI ${lastA.plusDI.toFixed(0)} / -DI ${lastA.minusDI.toFixed(0)})</text>`;
+  }
+
+  svg += `</svg>`;
+  return svg;
+}
+
+/* ============================================================================
+ * 8. [시연 ②] 자연어 오토파일럿 규칙 파서 (NLP Rule Parser)
+ * ============================================================================ */
+function parseAutopilotCommand(text, silent = false) {
+  const cmd = String(text || '').trim();
+  if (!cmd) return;
+  S.autopilot.nlCommand = cmd;
+
+  // 총 예산 파싱 (예: 총 100만 원)
+  const totalMatch = cmd.match(/총\s*(\d+(?:,\d+)?)\s*(만\s*원|만원|원)/);
+  if (totalMatch) {
+    const val = Number(totalMatch[1].replace(/,/g, ''));
+    S.autopilot.totalBudget = totalMatch[2].includes('만') ? val * 10000 : val;
+  }
+
+  // 1회 매수 금액 파싱 (예: 한 번에 30만 원 / 1회 30만원)
+  const onceMatch = cmd.match(/(?:한\s*번에|1회)\s*(\d+(?:,\d+)?)\s*(만\s*원|만원|원)/);
+  if (onceMatch) {
+    const val = Number(onceMatch[1].replace(/,/g, ''));
+    S.autopilot.perOrderAmount = onceMatch[2].includes('만') ? val * 10000 : val;
+  }
+
+  // 손절 % 파싱
+  const stopMatch = cmd.match(/손절\s*[-−]?\s*(\d+(?:\.\d+)?)\s*%/);
+  if (stopMatch) S.autopilot.stopLossPct = Number(stopMatch[1]);
+
+  // 익절 % 파싱
+  const tpMatch = cmd.match(/익절\s*[+＋]?\s*(\d+(?:\.\d+)?)\s*%/);
+  if (tpMatch) S.autopilot.takeProfitPct = Number(tpMatch[1]);
+
+  // 전략 파싱
+  if (cmd.includes('눌림목')) S.autopilot.strategy = 'pullback';
+  else if (cmd.includes('돌파')) S.autopilot.strategy = 'breakout';
+  else if (cmd.includes('추세')) S.autopilot.strategy = 'trend';
+
+  log('오토파일럿 자연어 규칙 파싱', `총 예산 ${won(S.autopilot.totalBudget)} · 1회 ${won(S.autopilot.perOrderAmount)} · 손절 -${S.autopilot.stopLossPct}% · 익절 +${S.autopilot.takeProfitPct}%`);
+  if (!silent) {
+    render();
+    toast('✅ 요청하신 문장을 오토파일럿 투자규칙으로 정리했습니다!');
+  }
+}
+
+function toggleAutopilotTarget(k) {
+  const idx = S.autopilot.targetKeys.indexOf(k);
+  if (idx >= 0) {
+    if (S.autopilot.targetKeys.length > 1) S.autopilot.targetKeys.splice(idx, 1);
+  } else {
+    S.autopilot.targetKeys.push(k);
+  }
+  render();
+}
+
+function activateAutopilotAndGoReplay() {
+  S.autopilot.enabled = true;
+  resetReplaySimulation(S.replay.k || S.selected, false);
+  log('오토파일럿 ON', `총 ${won(S.autopilot.totalBudget)} / 1회 ${won(S.autopilot.perOrderAmount)} / 손절 -${S.autopilot.stopLossPct}% / 익절 +${S.autopilot.takeProfitPct}%`);
+  render();
+  toast('🚀 오토파일럿이 켜졌습니다! 아래 과거장 자동 재생으로 작동을 확인하세요.');
+}
+
+/* ============================================================================
+ * 9. [시연 ③] 과거장 자동 재생 엔진 (Historical Auto-Replay Simulation)
+ * ============================================================================ */
+function stopReplayTimer() {
+  if (replayTimer) {
+    clearInterval(replayTimer);
+    replayTimer = null;
+  }
+  S.replay.playing = false;
+}
+
+function resetReplaySimulation(k = S.replay.k, doRender = true) {
+  stopReplayTimer();
+  const budget = S.autopilot.totalBudget || 1000000;
+  S.replay = {
+    k,
+    startIndex: 125,
+    curIndex: 125,
+    playing: false,
+    speedMs: S.replay.speedMs || 550,
+    budgetTotal: budget,
+    cashRemaining: budget,
+    position: null,
+    realizedPnl: 0,
+    totalFees: 0,
+    peakEquity: budget,
+    mddPct: 0,
+    markers: [],
+    events: [
+      {
+        day: '초기화',
+        date: S.markets[k][125].date,
+        type: 'INIT',
+        title: `오토파일럿 감시 시작 (${SEED[k].name})`,
+        detail: `예산 ${won(budget)} · 1회 ${won(S.autopilot.perOrderAmount)} · 손절 -${S.autopilot.stopLossPct}% · 익절 +${S.autopilot.takeProfitPct}% (목표 도달 시 50% 익절 후 추세추종)`
+      }
+    ],
+    statusBanner: `[Day 1 / 55] ${SEED[k].name} 일별 가격 및 기술적 지표(5·20·60·120일선, RSI, MACD, 볼린저밴드) 감시 시작`
+  };
+  if (doRender) render();
+}
+
+function startReplaySimulation() {
+  if (S.replay.curIndex >= S.markets[S.replay.k].length - 1) {
+    resetReplaySimulation(S.replay.k, false);
+  }
+  stopReplayTimer();
+  S.replay.playing = true;
+  S.autopilot.enabled = true;
+  render();
+  replayTimer = setInterval(() => {
+    stepReplayDay();
+  }, S.replay.speedMs);
+}
+
+function setReplaySpeed(ms) {
+  S.replay.speedMs = ms;
+  if (S.replay.playing) {
+    stopReplayTimer();
+    startReplaySimulation();
+  } else {
+    render();
+  }
+}
+
+function stepReplayDay() {
+  const R = S.replay;
+  const k = R.k;
+  const ar = S.markets[k];
+
+  if (R.curIndex >= ar.length - 1) {
+    stopReplayTimer();
+    R.statusBanner = `🏁 과거장 재생 완료! 누적 손익 ${R.realizedPnl >= 0 ? '+' : ''}${won(R.realizedPnl)} · 거래비용 ${won(R.totalFees)} · 최대낙폭(MDD) ${R.mddPct.toFixed(2)}%`;
+    render();
+    toast('과거장 55거래일 자동 재생 시뮬레이션이 완료되었습니다.');
+    return;
+  }
+
+  R.curIndex++;
+  const i = R.curIndex;
+  const bar = ar[i];
+  const ev = evaluateStrategy(k, S.autopilot.strategy, i);
+  const a = ev.a;
+  const dayNum = i - R.startIndex + 1;
+  const feeRate = 0.0012; // 수수료+슬리피지 약 12bp
+
+  if (!R.position) {
+    // 1. 미보유 상태: 진입 조건 충족 여부 점검
+    if (ev.ready && R.cashRemaining >= bar.c) {
+      const alloc = Math.min(S.autopilot.perOrderAmount, R.cashRemaining);
+      const qty = Math.max(1, Math.floor(alloc / bar.c));
+      const cost = qty * bar.c;
+      const fee = Math.round(cost * feeRate);
+
+      if (cost + fee <= R.cashRemaining) {
+        R.cashRemaining -= (cost + fee);
+        R.totalFees += fee;
+        const stopPrice = Math.round(bar.c * (1 - S.autopilot.stopLossPct / 100));
+        const targetPrice = Math.round(bar.c * (1 + S.autopilot.takeProfitPct / 100));
+
+        R.position = {
+          qty,
+          initialQty: qty,
+          avgPrice: bar.c,
+          stopPrice,
+          targetPrice,
+          partialTaken: false,
+          highPrice: bar.c
+        };
+
+        R.markers.push({ idx: i, type: 'BUY', price: bar.c, label: `매수 ${qty}주` });
+        const reason = `5>20>60>120일 정배열 · RSI ${a.r.toFixed(1)} · 거래량 ${a.v.toFixed(2)}배 충족`;
+        R.events.unshift({
+          day: `D+${dayNum}`,
+          date: bar.date,
+          type: 'BUY',
+          title: `🟢 조건 충족 매수 체결 (${qty}주 × ${won(bar.c)})`,
+          detail: `근거: [${ev.stratName}] ${reason} | 1회 한도(${won(S.autopilot.perOrderAmount)}) 내 ${won(cost)} 집행 · 초기 손절가 ${won(stopPrice)}(-${S.autopilot.stopLossPct}%) · 목표가 ${won(targetPrice)}(+${S.autopilot.takeProfitPct}%)`
+        });
+        R.statusBanner = `[${bar.date}] 🟢 진입 조건 충족! ${SEED[k].name} ${qty}주(${won(cost)}) 매수 체결 (손절 ${won(stopPrice)} / 목표 ${won(targetPrice)})`;
+      }
+    } else {
+      const waitReason = ev.lacking.length ? ev.lacking[0].label : '추세 확인 대기';
+      R.statusBanner = `[${bar.date}] 🔍 일별 지표 점검 중 (${won(bar.c)}) · RSI ${a.r.toFixed(1)} · ${waitReason} 대기`;
+    }
+  } else {
+    // 2. 보유 상태: 손절가 / 목표가(+12% 일부익절) / 추세추종 보호가격 관리
+    const pos = R.position;
+    pos.highPrice = Math.max(pos.highPrice, bar.h);
+
+    // (A) 목표가 도달 시 50% 일부 익절 후 나머지 추세추종 전환
+    if (!pos.partialTaken && bar.h >= pos.targetPrice) {
+      const execPrice = Math.max(bar.c, pos.targetPrice);
+      const sellQty = Math.max(1, Math.floor(pos.qty / 2));
+      const proceeds = sellQty * execPrice;
+      const fee = Math.round(proceeds * feeRate);
+      const pnl = (execPrice - pos.avgPrice) * sellQty - fee;
+
+      R.cashRemaining += (proceeds - fee);
+      R.totalFees += fee;
+      R.realizedPnl += pnl;
+      pos.qty -= sellQty;
+      pos.partialTaken = true;
+      // 보호가격을 매수가 위(추세추종 트레일링 스탑)로 상향!
+      pos.stopPrice = Math.round(Math.max(pos.avgPrice * 1.035, a.m20 * 0.99, pos.highPrice * 0.955));
+
+      R.markers.push({ idx: i, type: 'PARTIAL', price: execPrice, label: `50%익절 +${S.autopilot.takeProfitPct}%` });
+      R.events.unshift({
+        day: `D+${dayNum}`,
+        date: bar.date,
+        type: 'PARTIAL',
+        title: `🎯 목표가(+${S.autopilot.takeProfitPct}%) 도달 · ${sellQty}주 일부 익절 (+${won(pnl)})`,
+        detail: `근거: 목표가(${won(pos.targetPrice)}) 도달로 50% 이익 확정 후, 잔여 ${pos.qty}주는 보호가격을 ${won(pos.stopPrice)}으로 상향하여 상승 추세를 끝까지 추종합니다.`
+      });
+      R.statusBanner = `[${bar.date}] 🎯 목표가(+${S.autopilot.takeProfitPct}%) 도달! ${sellQty}주 일부 익절 완료 (+${won(pnl)}) · 잔여 ${pos.qty}주 추세추종 전환`;
+    }
+    // (B) 일부 익절 이후 잔여 수량 추세추종 트레일링 스탑 상향 및 이탈/추세약화 점검
+    else if (pos.partialTaken) {
+      const newTrailStop = Math.round(Math.max(pos.stopPrice, pos.highPrice * 0.955, a.m20 * 0.988));
+      pos.stopPrice = newTrailStop;
+
+      const trendWeakened = bar.l <= pos.stopPrice || (bar.c < a.m20 && a.macdHist < 0);
+      if (trendWeakened && pos.qty > 0) {
+        const exitPrice = bar.l <= pos.stopPrice ? pos.stopPrice : bar.c;
+        const sellQty = pos.qty;
+        const proceeds = sellQty * exitPrice;
+        const fee = Math.round(proceeds * feeRate);
+        const pnl = (exitPrice - pos.avgPrice) * sellQty - fee;
+
+        R.cashRemaining += (proceeds - fee);
+        R.totalFees += fee;
+        R.realizedPnl += pnl;
+        R.position = null;
+
+        R.markers.push({ idx: i, type: 'EXIT', price: exitPrice, label: `추세청산` });
+        R.events.unshift({
+          day: `D+${dayNum}`,
+          date: bar.date,
+          type: 'EXIT',
+          title: `🛡️ 보호가격 이탈·추세 약화 청산 (${sellQty}주 · +${won(pnl)})`,
+          detail: `근거: 추세추종 중 상향된 보호가격(${won(pos.stopPrice)}) 및 20일선(${won(a.m20)}) 하향 이탈 감지 ➔ 잔여 수량 전량 이익보존 청산 완료`
+        });
+        R.statusBanner = `[${bar.date}] 🛡️ 추세 약화·보호가격(${won(pos.stopPrice)}) 이탈 감지 ➔ 잔여 ${sellQty}주 청산 완료 (수익 확정 +${won(pnl)})`;
+      } else {
+        const curRate = ((bar.c / pos.avgPrice - 1) * 100).toFixed(1);
+        R.statusBanner = `[${bar.date}] 📈 잔여 ${pos.qty}주 추세추종 홀딩 중 (수익률 +${curRate}%) · 보호가격 ${won(pos.stopPrice)} 상향 유지`;
+      }
+    }
+    // (C) 목표 도달 전 초기 손절가(-4%) 이탈 시 리스크 관리 손절
+    else if (bar.l <= pos.stopPrice) {
+      const exitPrice = pos.stopPrice;
+      const sellQty = pos.qty;
+      const proceeds = sellQty * exitPrice;
+      const fee = Math.round(proceeds * feeRate);
+      const pnl = (exitPrice - pos.avgPrice) * sellQty - fee;
+
+      R.cashRemaining += (proceeds - fee);
+      R.totalFees += fee;
+      R.realizedPnl += pnl;
+      R.position = null;
+
+      R.markers.push({ idx: i, type: 'EXIT', price: exitPrice, label: `손절 -${S.autopilot.stopLossPct}%` });
+      R.events.unshift({
+        day: `D+${dayNum}`,
+        date: bar.date,
+        type: 'STOP',
+        title: `⚠️ 손절 보호가격(-${S.autopilot.stopLossPct}%) 이탈 청산 (${sellQty}주 · ${won(pnl)})`,
+        detail: `근거: 사전 설정한 손절 기준(${won(exitPrice)}) 도달로 추가 손실 방지를 위해 원칙대로 자동 손절 대응`
+      });
+      R.statusBanner = `[${bar.date}] ⚠️ 보호가격(${won(exitPrice)}) 이탈 ➔ 원칙에 따라 ${sellQty}주 손절 청산 (${won(pnl)})`;
+    } else {
+      const curRate = ((bar.c / pos.avgPrice - 1) * 100).toFixed(1);
+      R.statusBanner = `[${bar.date}] ⏳ 보유 ${pos.qty}주 감시 중 (${curRate >= 0 ? '+' : ''}${curRate}%) · 손절가 ${won(pos.stopPrice)} / 목표가 ${won(pos.targetPrice)}`;
+    }
+  }
+
+  // 일별 자산 평가 및 MDD(최대 낙폭) 계산
+  const posVal = R.position ? R.position.qty * bar.c : 0;
+  const curEquity = R.cashRemaining + posVal;
+  R.peakEquity = Math.max(R.peakEquity, curEquity);
+  const dd = ((curEquity / R.peakEquity) - 1) * 100;
+  R.mddPct = Math.min(R.mddPct, dd);
+
+  render();
+}
+
+function scrubReplayIndex(val) {
+  stopReplayTimer();
+  const targetIdx = Number(val);
+  resetReplaySimulation(S.replay.k, false);
+  while (S.replay.curIndex < targetIdx) {
+    stepReplayDay();
+  }
+  render();
+}
+
+/* ============================================================================
+ * 10. MTS 각 화면 렌더링 (홈/Signal Radar · 차트[시연①] · 오토파일럿[시연②·③] · 주문 · 잔고[X-RAY])
+ * ============================================================================ */
+function renderMuseAmbientBar() {
+  const ac = account(), k = S.selected, s = SEED[k];
+  const ev = evaluateStrategy(k, HS.strategy);
+
+  if (HS.page === 'autopilot') {
+    return `
+      <div class="muse-ambient-bar" onclick="openNaviDock('autopilot')">
+        <div class="muse-orb">N</div>
+        <div class="muse-bar-text">
+          <strong>🤖 오토파일럿 ${S.autopilot.enabled ? 'ON (가동 중)' : '규칙 설정 대기'} · 예산 ${won(S.autopilot.totalBudget)} / 1회 ${won(S.autopilot.perOrderAmount)}</strong>
+          <small>손절 -${S.autopilot.stopLossPct}% · 익절 +${S.autopilot.takeProfitPct}% (일부 익절 후 추세추종) · 터치하여 자연어 설정</small>
+        </div>
+        <span style="font-size:11px; font-weight:800; color:#38bdf8;">규칙 ›</span>
+      </div>`;
+  }
+
+  if (HS.page === 'stock') {
+    return `
+      <div class="muse-ambient-bar" onclick="openNaviDock('autopilot')">
+        <div class="muse-orb">N</div>
+        <div class="muse-bar-text">
+          <strong>${s.name} [${ev.stratName}] · ${ev.ready ? '🟢 진입 조건 충족' : (ev.a.hot ? '🔴 과열 보류' : '🟡 일부 조건 대기')}</strong>
+          <small>${esc(ev.summaryVerdict)}</small>
+        </div>
+        <span style="font-size:11px; font-weight:800; color:#38bdf8;">오토파일럿 ›</span>
+      </div>`;
+  }
+
+  return `
+    <div class="muse-ambient-bar" onclick="openNaviDock('autopilot')">
+      <div class="muse-orb">N</div>
+      <div class="muse-bar-text">
+        <strong>${S.memory.awayGuard ? '✈️ 여행·부재 가드 작동 중 · ' : ''}반도체 비중 ${ac.semi.toFixed(1)}% · 타이밍 포착 ${S.watch.filter(x => evaluateStrategy(x, 'trend').ready).length}종목</strong>
+        <small>“그래서 지금 사도 되나?” ➔ 추세추종 Signal Radar와 오토파일럿이 답합니다</small>
+      </div>
+      <span style="font-size:11px; font-weight:800; color:#38bdf8;">열기 ›</span>
+    </div>`;
+}
+
+// [SLIDE 4 & 홈 화면] 4대 핵심 기능 허브 + Signal Radar
+function renderHostHome() {
+  const ac = account();
+  if (senior()) {
+    return `
+      <div class="senior-big-card">
+        <div class="row">
+          <span style="font-size:15px; font-weight:800; color:#854d0e;">👵 어르신 안심 투자 요약</span>
+          <button onclick="speak('어르신, 현재 계좌 총 자산은 ' + ${Math.round(ac.nav)} + '원이며, 오늘 ' + ${Math.round(ac.pnl)} + '원 수익 중입니다.')" style="background:#eab308; color:#000; border:0; padding:6px 12px;">🔊 소리로 듣기</button>
+        </div>
+        <div class="mono" style="font-size:28px; font-weight:900; margin-top:6px;">${won(ac.nav)}</div>
+        <div style="font-size:15px; font-weight:800; color:var(--up); margin-top:4px;">평가수익 +${won(ac.pnl)} (현금 ${won(S.cash)})</div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:18px; margin-bottom:10px;">원하시는 기능을 눌러주세요</h3>
+        <div style="display:grid; gap:9px;">
+          <button onclick="navigate('stock', 'DB')" style="text-align:left; padding:14px; background:var(--sub);">
+            <strong style="font-size:17px; display:block;">📈 지금 사도 좋은 종목 보기 (DB하이텍)</strong>
+            <small style="color:var(--muted);">복잡한 차트를 쉬운 말로 풀이해 드립니다</small>
+          </button>
+          <button onclick="navigate('autopilot')" style="text-align:left; padding:14px; background:var(--sub);">
+            <strong style="font-size:17px; display:block;">🤖 알아서 손절·익절 챙겨주는 오토파일럿</strong>
+            <small style="color:var(--muted);">총 100만 원 안에서 안전하게 자동 관리</small>
+          </button>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <!-- SLIDE 4: NAVI 4대 핵심 기능 카드 그리드 -->
+    <div class="navi-hud-card">
+      <div class="row" style="margin-bottom:8px;">
+        <span style="font-size:11px; font-weight:800; color:#38bdf8; letter-spacing:0.6px;">✦ SLIDE 4 · NAVI 4 CORE PILLARS</span>
+        <span class="tag info" style="background:rgba(56,189,248,0.18); color:#7dd3fc;">시제품 핵심 연동 완료</span>
+      </div>
+      <div class="grid-2" style="gap:7px;">
+        <div onclick="navigate('balance')" style="background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); border-radius:11px; padding:9px; cursor:pointer;">
+          <strong style="font-size:12px; color:#fbbf24; display:block;">① 포트폴리오 X-RAY</strong>
+          <small style="font-size:10.5px; color:#cbd5e1;">반도체 편중 ${ac.semi.toFixed(1)}% · 현금 ${ac.cashRatio.toFixed(0)}%</small>
+        </div>
+        <div onclick="navigate('stock', 'DB')" style="background:rgba(56,189,248,0.15); border:1px solid #38bdf8; border-radius:11px; padding:9px; cursor:pointer;">
+          <strong style="font-size:12px; color:#38bdf8; display:block;">② Signal Radar (핵심)</strong>
+          <small style="font-size:10.5px; color:#e2e8f0;">추세추종·다중지표 타이밍 판단</small>
+        </div>
+        <div onclick="openMemoryModal()" style="background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); border-radius:11px; padding:9px; cursor:pointer;">
+          <strong style="font-size:12px; color:#c084fc; display:block;">③ Investment Memory</strong>
+          <small style="font-size:10.5px; color:#cbd5e1;">성향·징크스·여행 부재가드 기억</small>
+        </div>
+        <div onclick="navigate('autopilot')" style="background:rgba(16,185,129,0.16); border:1px solid #34d399; border-radius:11px; padding:9px; cursor:pointer;">
+          <strong style="font-size:12px; color:#6ee7b7; display:block;">④ Action & 오토파일럿</strong>
+          <small style="font-size:10.5px; color:#e2e8f0;">100만/30만/-4%/+12% 자동매매</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- 빠른 시연 이동 배너 -->
+    <div class="grid-3" style="margin-bottom:10px;">
+      <button class="primary-btn" style="font-size:11.5px; padding:8px 6px;" onclick="runPresentationStep('demo1')">시연① 차트분석</button>
+      <button class="cyan-btn" style="font-size:11.5px; padding:8px 6px;" onclick="runPresentationStep('demo2')">시연② 규칙설정</button>
+      <button style="background:#059669; color:#fff; border-color:#059669; font-size:11.5px; padding:8px 6px;" onclick="runPresentationStep('demo3')">시연③ 과거장재생</button>
+    </div>
+
+    <!-- 관심종목 Signal Radar 리스트 -->
+    <div class="card">
+      <div class="row" style="margin-bottom:8px;">
+        <div>
+          <h3 style="font-size:14.5px;">📡 Signal Radar 관심종목 타이밍 진단</h3>
+          <small style="font-size:11px; color:var(--muted);">“그래서 지금 사도 돼?”에 대한 추세추종 다중지표 실시간 판정</small>
+        </div>
+      </div>
+
+      <div>
+        ${S.watch.map(k => {
+          const ev = evaluateStrategy(k, HS.strategy);
+          const h = S.holdings[k]?.qty || 0;
+          const badge = ev.ready
+            ? '<span class="tag good">🟢 진입충족</span>'
+            : (ev.a.hot ? '<span class="tag bad">🔴 과열주의</span>' : '<span class="tag warn">🟡 조건대기</span>');
+          return `
+            <button class="stock-row" onclick="navigate('stock', '${k}')">
+              <div>
+                <div class="flex">
+                  <strong style="font-size:14px;">${SEED[k].name}</strong>
+                  ${badge}
+                  <span style="font-size:10.5px; color:var(--primary); font-weight:700;">스코어 ${ev.score}점</span>
+                </div>
+                <small style="color:var(--muted); font-size:11px; display:block; margin-top:2px;">
+                  ${h ? `보유 ${h}주 · ` : ''}20일선 ${won(ev.a.m20)} · RSI ${ev.a.r.toFixed(1)} · 거래량 ${ev.a.v.toFixed(2)}배
+                </small>
+              </div>
+              <div style="text-align:right;">
+                <strong class="mono" style="font-size:15px; display:block;">${num(price(k))}원</strong>
+                <small style="color:var(--primary); font-size:10.5px; font-weight:700;">차트·타이밍 ›</small>
+              </div>
+            </button>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+// [시연 ① 투자타이밍 분석 화면] (5/20/60/120일 이평선 + 볼린저밴드 + RSI/MACD/ADX + 3대 전략 선택)
+function renderHostStock() {
+  const k = S.selected, s = SEED[k];
+  const ev = evaluateStrategy(k, HS.strategy);
+  const a = ev.a;
+  const h = S.holdings[k]?.qty || 0;
+  const badge = ev.ready
+    ? '<span class="tag good">🟢 진입 조건 충족</span>'
+    : (a.hot ? '<span class="tag bad">🔴 단기 과열 (진입보류)</span>' : '<span class="tag warn">🟡 일부 조건 대기</span>');
+
+  return `
+    <!-- 종목 헤더 -->
+    <div class="card" style="padding:12px;">
+      <div class="row">
+        <div>
+          <div class="flex">
+            <select onchange="S.selected=this.value; render()" style="width:auto; font-weight:800; font-size:15px; padding:3px 8px; border-color:var(--primary);">
+              ${S.watch.map(x => `<option value="${x}" ${x === k ? 'selected' : ''}>${SEED[x].name} (${SEED[x].code})</option>`).join('')}
+            </select>
+            ${badge}
+          </div>
+          <span style="font-size:11px; color:var(--muted); display:block; margin-top:3px;">
+            ${s.sector} ${h ? `· 보유 ${h}주 (평단 ${won(S.holdings[k].avg)})` : '· 관심종목 감시 중'}
+          </span>
+        </div>
+        <div style="text-align:right;">
+          <strong class="mono" style="font-size:21px; font-weight:900; color:var(--up);">${won(a.p)}</strong>
+          <small style="display:block; font-size:10.5px; color:var(--primary); font-weight:800;">타이밍 점수 ${ev.score}/100</small>
+        </div>
+      </div>
+
+      <!-- [시연 ① 핵심] 3대 진입 전략 선택 탭 (단순 추세 진입 / 눌림목 반등 / 고점 돌파) -->
+      <div style="margin-top:10px; background:var(--sub); padding:8px; border-radius:11px; border:1px solid var(--line);">
+        <div class="row" style="margin-bottom:5px;">
+          <span style="font-size:11px; font-weight:800; color:var(--navy);">🎯 투자타이밍 분석 전략 선택 (시연 ①)</span>
+          <span style="font-size:10px; color:var(--muted);">클릭 시 조건 즉시 재판정</span>
+        </div>
+        <div class="grid-3">
+          ${[
+            ['trend', '📈 추세 진입'],
+            ['pullback', '🪃 눌림목 반등'],
+            ['breakout', '🚀 고점 돌파']
+          ].map(([id, label]) => `
+            <button onclick="HS.strategy='${id}'; render()" style="padding:6px 4px; font-size:11.5px; ${HS.strategy === id ? 'background:var(--navy); color:#fff; border-color:var(--navy); font-weight:800;' : ''}">${label}</button>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- 이동평균선(5/20/60/120) · 볼린저밴드 · 보조지표 토글 바 -->
+      <div class="row" style="margin:9px 0 6px; flex-wrap:wrap; gap:4px;">
+        <div class="flex" style="gap:4px;">
+          <button class="ind-pill ${HS.indicators.ma ? 'on' : ''}" onclick="HS.indicators.ma=!HS.indicators.ma; render()">MA 5·20·60·120</button>
+          <button class="ind-pill ${HS.indicators.bb ? 'on' : ''}" onclick="HS.indicators.bb=!HS.indicators.bb; render()">볼린저밴드</button>
+          <button class="ind-pill ${HS.indicators.vol ? 'on' : ''}" onclick="HS.indicators.vol=!HS.indicators.vol; render()">거래량</button>
+        </div>
+        <div class="flex" style="gap:4px;">
+          ${[['rsi', 'RSI'], ['macd', 'MACD'], ['adx', 'ADX']].map(([id, lbl]) => `
+            <button class="ind-pill ${HS.taSub === id ? 'on' : ''}" onclick="HS.taSub='${id}'; render()">${lbl}</button>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- 이평선 색상 범례 -->
+      <div class="flex" style="font-size:10px; color:var(--muted); margin-bottom:5px; gap:8px;">
+        <span><b style="color:#2dd4bf;">━</b> 5일(${num(a.m5)})</span>
+        <span><b style="color:#f59e0b;">━</b> 20일(${num(a.m20)})</span>
+        <span><b style="color:#a855f7;">━</b> 60일(${num(a.m60)})</span>
+        <span><b style="color:#94a3b8;">┅</b> 120일(${num(a.m120)})</span>
+        <span><b style="color:#0284c7;">▒</b> 볼린저(20,2)</span>
+      </div>
+
+      <!-- 고해상도 캔들 + 이평선 + 볼린저 + 서브지표 SVG 차트 -->
+      <div id="stockChartContainer">${renderAdvancedChartSVG(k, S.markets[k].length - 1, false)}</div>
+
+      <!-- NAVI 종합 타이밍 판정 & 조건 충족/미충족 상세 해설 HUD -->
+      <div class="navi-hud-card" style="margin-top:10px; margin-bottom:4px;">
+        <div class="row" style="margin-bottom:6px;">
+          <strong style="font-size:12.5px; color:#38bdf8;">✦ NAVI 투자타이밍 판단 보조 ([${ev.stratName}] 기준)</strong>
+          <button onclick="speak('${s.name} ${ev.summaryVerdict.replace(/[^\w\s가-힣.,%]/g, '')}')" style="background:rgba(255,255,255,0.12); color:#fff; border:0; padding:3px 8px; font-size:10.5px;">🔊 음성브리핑</button>
+        </div>
+        <p style="font-size:12px; color:#f1f5f9; line-height:1.55; margin-bottom:9px;">
+          ${esc(ev.summaryVerdict)}
+        </p>
+
+        <!-- 5대 세부 기술적 조건 체크리스트 -->
+        <div style="background:rgba(15,23,42,0.75); border:1px solid rgba(148,163,184,0.22); border-radius:11px; padding:9px; display:grid; gap:5px; font-size:11px;">
+          ${ev.checks.map(c => `
+            <div class="row" style="align-items:flex-start;">
+              <span style="color:${c.ok ? '#4ade80' : '#fbbf24'}; font-weight:700;">${c.ok ? '✔ 충족' : '✘ 부족'} · ${esc(c.label)}</span>
+              <span class="mono" style="color:#cbd5e1; font-size:10.5px; text-align:right;">${esc(c.detail)}</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="grid-2" style="margin-top:10px;">
+          <button class="cyan-btn" onclick="runPresentationStep('demo2')">
+            🤖 [시연 ②] 오토파일럿 규칙 설정 ›
+          </button>
+          <button class="buy-btn" onclick="openNaviDock('action')">
+            ✏️ 수동 1장 매매계획 카드 열기
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// [시연 ② 오토파일럿 설정 & 시연 ③ 과거장 자동 재생 통합 화면]
+function renderHostAutopilot() {
+  const ap = S.autopilot;
+  const R = S.replay;
+  const k = R.k;
+  const ar = S.markets[k];
+  const curBar = ar[R.curIndex];
+  const dayNum = R.curIndex - R.startIndex + 1;
+  const totalDays = ar.length - 1 - R.startIndex + 1;
+  const posVal = R.position ? R.position.qty * curBar.c : 0;
+  const totalEquity = R.cashRemaining + posVal;
+  const totalPnl = totalEquity - R.budgetTotal;
+  const totalRetPct = (totalPnl / R.budgetTotal) * 100;
+
+  return `
+    <!-- [시연 ②] 오토파일럿 자연어 요청 & 투자규칙 확인 카드 -->
+    <div class="navi-hud-card">
+      <div class="row" style="margin-bottom:6px;">
+        <span style="font-size:11px; font-weight:800; color:#38bdf8;">✦ [시연 ②] 오토파일럿 자연어 규칙 설정</span>
+        <span class="tag ${ap.enabled ? 'good' : 'warn'}">${ap.enabled ? '🟢 오토파일럿 ON' : '🟡 규칙 확인 대기'}</span>
+      </div>
+
+      <p style="font-size:11.5px; color:#cbd5e1; margin-bottom:8px;">
+        고객이 분석 결과를 보고 일일이 주문하는 대신, <strong>자신의 투자 원칙을 자연어로 요청하면 NAVI가 투자규칙으로 정리</strong>합니다.
+      </p>
+
+      <!-- 대본 속 자연어 프롬프트 입력창 & 프리셋 -->
+      <div style="background:rgba(15,23,42,0.85); border:1px solid #38bdf8; border-radius:11px; padding:9px; margin-bottom:9px;">
+        <label style="font-size:10.5px; color:#7dd3fc; font-weight:700; display:block; margin-bottom:4px;">💬 NAVI에게 투자 원칙 요청하기 (대본 예시)</label>
+        <div class="row">
+          <input id="inpAutopilotNL" value="${esc(ap.nlCommand)}" style="background:#0f172a; color:#fff; border-color:#334155; font-size:11.5px;" onkeydown="if(event.key==='Enter') parseAutopilotCommand(this.value)">
+          <button class="cyan-btn" style="white-space:nowrap; font-size:11px;" onclick="parseAutopilotCommand($('inpAutopilotNL').value)">규칙 변환</button>
+        </div>
+        <div class="flex" style="margin-top:6px;">
+          <button onclick="$('inpAutopilotNL').value='관심종목만 총 100만 원, 한 번에 30만 원, 손절 4%, 익절 12%로 오토파일럿 설정해 줘.'; parseAutopilotCommand($('inpAutopilotNL').value)" style="font-size:10px; padding:3px 7px; background:#1e293b; color:#38bdf8; border-color:#334155;">
+            📌 대본 원문 그대로 입력 (“총 100만 원, 한 번에 30만 원, 손절 4%, 익절 12%”)
+          </button>
+        </div>
+      </div>
+
+      <!-- 정리된 투자규칙(Investment Rule) 확인 및 수정 그리드 -->
+      <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:12px; padding:10px; font-size:11.5px;">
+        <div class="row" style="margin-bottom:6px;">
+          <strong style="color:#ffffff;">📋 NAVI가 정리한 오토파일럿 투자규칙</strong>
+          <span style="font-size:10px; color:#94a3b8;">직접 수정 가능</span>
+        </div>
+
+        <!-- 1. 투자 대상 관심종목 선택 -->
+        <div style="margin-bottom:7px;">
+          <span style="font-size:10.5px; color:#cbd5e1; display:block; margin-bottom:4px;">① 관심종목 중 투자 대상 선택</span>
+          <div class="flex">
+            ${S.watch.map(x => {
+              const on = ap.targetKeys.includes(x);
+              return `<button onclick="toggleAutopilotTarget('${x}')" style="padding:3px 8px; font-size:10.5px; border-radius:99px; ${on ? 'background:#38bdf8; color:#091326; border-color:#38bdf8; font-weight:800;' : 'background:#0f172a; color:#94a3b8; border-color:#334155;'}">${on ? '✓ ' : ''}${SEED[x].name}</button>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- 2. 예산 / 1회 한도 / 손절 / 익절 수치 -->
+        <div class="grid-2" style="gap:6px; margin-bottom:8px;">
+          <div style="background:#0f172a; padding:7px 9px; border-radius:9px; border:1px solid #1e293b;">
+            <span style="font-size:10px; color:#94a3b8; display:block;">② 총 투자 예산 한도</span>
+            <strong class="mono" style="font-size:13.5px; color:#fff;">${won(ap.totalBudget)}</strong>
+          </div>
+          <div style="background:#0f172a; padding:7px 9px; border-radius:9px; border:1px solid #1e293b;">
+            <span style="font-size:10px; color:#94a3b8; display:block;">③ 1회 최대 매수 금액</span>
+            <strong class="mono" style="font-size:13.5px; color:#38bdf8;">${won(ap.perOrderAmount)}</strong>
+            <small style="font-size:9.5px; color:#64748b; display:block;">(${SEED[R.k].name} 기준 1회 ${Math.max(1, Math.floor(ap.perOrderAmount / price(R.k)))}주)</small>
+          </div>
+          <div style="background:#0f172a; padding:7px 9px; border-radius:9px; border:1px solid #1e293b;">
+            <span style="font-size:10px; color:#fda4af; display:block;">④ 손절 기준 (보호가격)</span>
+            <strong class="mono" style="font-size:13.5px; color:#f43f5e;">-${ap.stopLossPct.toFixed(1)}%</strong>
+            <small style="font-size:9.5px; color:#94a3b8; display:block;">이탈 시 즉시 청산</small>
+          </div>
+          <div style="background:#0f172a; padding:7px 9px; border-radius:9px; border:1px solid #1e293b;">
+            <span style="font-size:10px; color:#6ee7b7; display:block;">⑤ 익절 기준 & 추세추종</span>
+            <strong class="mono" style="font-size:13.5px; color:#10b981;">+${ap.takeProfitPct.toFixed(1)}%</strong>
+            <small style="font-size:9.5px; color:#94a3b8; display:block;">50% 익절 후 잔여 추세추종</small>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <button onclick="activateAutopilotAndGoReplay()" style="background:#10b981; color:#052e16; border-color:#10b981; font-weight:900; font-size:12px;">
+            ✅ 규칙 확인 · 오토파일럿 ON
+          </button>
+          <button class="cyan-btn" style="font-size:12px;" onclick="startReplaySimulation()">
+            ▶ [시연 ③] 과거장 자동 재생 시작
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- [시연 ③] 과거장 자동 재생 (Historical Market Auto-Replay) 시뮬레이터 -->
+    <div class="card" style="border:2px solid var(--primary);">
+      <div class="row" style="margin-bottom:8px;">
+        <div>
+          <span class="eyebrow">DEMO 03 · HISTORICAL AUTO-REPLAY</span>
+          <h3 style="font-size:15px; margin-top:2px;">⏯️ [시연 ③] 과거장 자동 재생 시뮬레이션</h3>
+        </div>
+        <select onchange="resetReplaySimulation(this.value, true)" style="width:auto; font-size:11.5px; font-weight:700; padding:4px 8px;">
+          ${['DB', 'RB', 'SP', 'SS'].map(x => `<option value="${x}" ${R.k === x ? 'selected' : ''}>${SEED[x].name}</option>`).join('')}
+        </select>
+      </div>
+
+      <!-- 재생 컨트롤 바 -->
+      <div class="card-soft" style="background:#0f172a; color:#fff; border-color:#1e293b; padding:10px;">
+        <div class="row" style="margin-bottom:7px;">
+          <div class="flex" style="gap:5px;">
+            ${R.playing ? `
+              <button onclick="stopReplayTimer(); render()" style="background:#f59e0b; color:#000; border:0; font-weight:800; font-size:11.5px;">⏸ 일시정지</button>
+            ` : `
+              <button onclick="startReplaySimulation()" style="background:#10b981; color:#052e16; border:0; font-weight:900; font-size:11.5px;">▶ 자동 재생</button>
+            `}
+            <button onclick="stopReplayTimer(); stepReplayDay()" style="background:#1e293b; color:#fff; border-color:#334155; font-size:11px;">⏭ 1일 진행</button>
+            <button onclick="resetReplaySimulation(S.replay.k, true)" style="background:#1e293b; color:#94a3b8; border-color:#334155; font-size:11px;">🔄 처음부터</button>
+          </div>
+          <div class="flex" style="gap:3px;">
+            ${[[800, '1x'], [450, '2x'], [200, '4x']].map(([ms, lbl]) => `
+              <button onclick="setReplaySpeed(${ms})" style="padding:3px 7px; font-size:10px; ${R.speedMs === ms ? 'background:#38bdf8; color:#091326; font-weight:800;' : 'background:#1e293b; color:#94a3b8;'}">${lbl}</button>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- 진행 타임라인 슬라이더 -->
+        <div class="row" style="font-size:11px; color:#94a3b8; margin-bottom:3px;">
+          <span>재생 일자: <strong style="color:#38bdf8;" class="mono">${curBar.date} (Day ${dayNum}/${totalDays})</strong></span>
+          <span>당일 종가: <strong style="color:#fff;" class="mono">${won(curBar.c)}</strong></span>
+        </div>
+        <input type="range" min="${R.startIndex}" max="${ar.length - 1}" value="${R.curIndex}" oninput="scrubReplayIndex(this.value)" style="accent-color:#38bdf8; padding:0; cursor:pointer;">
+
+        <!-- 실시간 일별 판단 브리핑 배너 -->
+        <div style="margin-top:7px; padding:8px 10px; background:rgba(56,189,248,0.12); border-left:3px solid #38bdf8; border-radius:7px; font-size:11.5px; color:#e2e8f0;">
+          ${esc(R.statusBanner)}
+        </div>
+      </div>
+
+      <!-- 과거장 실시간 차트 (매수 / 50%익절 / 추세청산 마커 및 보호가/목표가 표시) -->
+      <div style="margin:8px 0;">
+        ${renderAdvancedChartSVG(R.k, R.curIndex, true)}
+      </div>
+
+      <!-- 대본 핵심 요구사항: 거래비용 · 손익 · 최대낙폭(MDD) · 보유 포지션 요약 대시보드 -->
+      <div class="grid-4" style="margin-bottom:10px;">
+        <div class="card-soft" style="margin:0; padding:8px; text-align:center;">
+          <span style="font-size:10px; color:var(--muted); display:block;">총 누적 손익</span>
+          <strong class="mono" style="font-size:12.5px; color:${totalPnl >= 0 ? 'var(--up)' : 'var(--down)'};">${totalPnl >= 0 ? '+' : ''}${won(totalPnl)}</strong>
+          <small class="mono" style="font-size:10px; color:${totalPnl >= 0 ? 'var(--up)' : 'var(--down)'}; display:block;">(${pct(totalRetPct)})</small>
+        </div>
+        <div class="card-soft" style="margin:0; padding:8px; text-align:center;">
+          <span style="font-size:10px; color:var(--muted); display:block;">누적 거래비용</span>
+          <strong class="mono" style="font-size:12.5px; color:var(--text);">${won(R.totalFees)}</strong>
+          <small style="font-size:9.5px; color:var(--muted); display:block;">수수료·슬리피지</small>
+        </div>
+        <div class="card-soft" style="margin:0; padding:8px; text-align:center;">
+          <span style="font-size:10px; color:var(--muted); display:block;">최대 낙폭(MDD)</span>
+          <strong class="mono" style="font-size:12.5px; color:var(--down);">${R.mddPct.toFixed(2)}%</strong>
+          <small style="font-size:9.5px; color:var(--green); display:block;">손절원칙 방어</small>
+        </div>
+        <div class="card-soft" style="margin:0; padding:8px; text-align:center;">
+          <span style="font-size:10px; color:var(--muted); display:block;">현재 보유 상태</span>
+          <strong class="mono" style="font-size:12px; color:var(--primary);">${R.position ? `${R.position.qty}주 보유` : '현금 대기'}</strong>
+          <small style="font-size:9.5px; color:var(--muted); display:block;">잔여 ${won(R.cashRemaining)}</small>
+        </div>
+      </div>
+
+      <!-- 어떤 조건으로 매매했는지 보여주는 상세 매매 근거 로그 -->
+      <div>
+        <div class="row" style="margin-bottom:6px;">
+          <strong style="font-size:12.5px;">📜 오토파일럿 매매 실행 내역 및 기술적 근거</strong>
+          <span style="font-size:10.5px; color:var(--muted);">총 ${R.events.length}건 기록</span>
+        </div>
+        <div style="display:grid; gap:6px; max-height:220px; overflow-y:auto;">
+          ${R.events.map(e => {
+            const borderCol = e.type === 'BUY' ? '#ef4444' : (e.type === 'PARTIAL' ? '#10b981' : (e.type === 'EXIT' ? '#3b82f6' : '#64748b'));
+            return `
+              <div style="padding:9px 11px; background:var(--sub); border:1px solid var(--line); border-left:4px solid ${borderCol}; border-radius:10px; font-size:11.5px;">
+                <div class="row">
+                  <strong>${esc(e.title)}</strong>
+                  <span class="mono" style="font-size:10px; color:var(--muted);">${esc(e.date)} (${esc(e.day)})</span>
+                </div>
+                <p style="font-size:11px; color:var(--muted); margin-top:3px; line-height:1.45;">${esc(e.detail)}</p>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+// MTS 수동 주문 화면 (가드레일 연동)
+function renderHostOrder() {
+  const o = HS.order, k = o.k, p = price(k), h = S.holdings[k]?.qty || 0;
+  const maxSafeQty = Math.max(1, Math.floor(S.autopilot.perOrderAmount / p));
+
+  return `
+    <div class="card">
+      <div class="row" style="margin-bottom:10px;">
+        <h3 style="font-size:16px;">MTS 주식주문 (${S.account.toUpperCase()})</h3>
+        <span style="font-size:11.5px; color:var(--muted);">가용 현금 ${won(S.cash)}</span>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:10px;">
+        <button onclick="HS.order.side='buy'; render()" style="${o.side === 'buy' ? 'background:#fee2e2; color:var(--up); border-color:var(--up); font-weight:800;' : ''}">매수</button>
+        <button onclick="HS.order.side='sell'; render()" style="${o.side === 'sell' ? 'background:#dbeafe; color:var(--down); border-color:var(--down); font-weight:800;' : ''}">매도 (보유 ${h}주)</button>
+      </div>
+
+      <label style="font-size:11.5px; color:var(--muted);">종목 선택</label>
+      <select onchange="HS.order.k=this.value; S.selected=this.value; render()" style="margin:4px 0 10px;">
+        ${Object.keys(SEED).map(x => `<option value="${x}" ${x === k ? 'selected' : ''}>${SEED[x].name} (${won(price(x))})</option>`).join('')}
+      </select>
+
+      <label style="font-size:11.5px; color:var(--muted);">주문 수량 (주)</label>
+      <div class="row" style="margin:4px 0 10px;">
+        <button onclick="HS.order.qty=Math.max(1, HS.order.qty-1); render()" style="width:42px;">−</button>
+        <input type="number" min="1" value="${o.qty}" onchange="HS.order.qty=Math.max(1, Number(this.value)||1); render()" class="mono" style="text-align:center; font-weight:800; font-size:15px;">
+        <button onclick="HS.order.qty++; render()" style="width:42px;">＋</button>
+      </div>
+
+      <div class="card-soft">
+        <div class="row"><span>주문 단가</span><strong class="mono">${won(p)}</strong></div>
+        <div class="row" style="margin-top:4px;"><span>예상 주문 총액</span><strong class="mono" style="font-size:15px; color:var(--primary);">${won(o.qty * p)}</strong></div>
+      </div>
+
+      <div class="card-soft" style="background:var(--primary-soft); border-color:#bfd0f7; font-size:11.5px;">
+        <strong>🛡️ NAVI 투자 원칙 연동:</strong> 내 오토파일럿 1회 매수 기준(${won(S.autopilot.perOrderAmount)}) 적용 시 적정 수량은 <strong>${maxSafeQty}주(${won(maxSafeQty * p)})</strong>입니다.
+        <button class="primary-btn wide" style="margin-top:6px; padding:6px;" onclick="HS.order.qty=${maxSafeQty}; render(); toast('1회 원칙 금액(30만 원)에 맞춰 수량을 보정했습니다.')">
+          1회 원칙 수량(${maxSafeQty}주)으로 자동 맞춤
+        </button>
+      </div>
+
+      <button class="wide ${o.side === 'buy' ? 'buy-btn' : 'sell-btn'}" style="margin-top:8px; padding:12px;" onclick="executeManualOrder()">
+        ${o.side === 'buy' ? '매수' : '매도'} 모의 체결 실행
+      </button>
+    </div>`;
+}
+
+function executeManualOrder() {
+  const o = HS.order, k = o.k, q = o.qty, p = price(k);
+  if (o.side === 'buy' && q * p > S.cash) { toast('가용 예수금이 부족합니다.'); return; }
+  if (o.side === 'sell' && q > (S.holdings[k]?.qty || 0)) { toast('보유 수량이 부족합니다.'); return; }
+
+  const h = S.holdings[k] || { qty: 0, avg: p };
+  if (o.side === 'buy') {
+    h.avg = Math.round((h.avg * h.qty + p * q) / (h.qty + q));
+    h.qty += q;
+    S.cash -= p * q;
+  } else {
+    h.qty -= q;
+    S.cash += p * q;
+  }
+  S.holdings[k] = h;
+  log(`수동 ${o.side === 'buy' ? '매수' : '매도'} 체결`, `${SEED[k].name} ${q}주 × ${won(p)}`);
+  toast(`${SEED[k].name} ${q}주 모의 체결 완료!`);
+  navigate('balance');
+}
+
+// [SLIDE 4 - 기능 ① 포트폴리오 X-RAY & 잔고 화면]
+function renderHostBalance() {
+  const ac = account();
+  return `
+    <!-- 포트폴리오 X-RAY 진단 HUD -->
+    <div class="navi-hud-card">
+      <div class="row" style="margin-bottom:6px;">
+        <span style="font-size:11.5px; font-weight:800; color:#fbbf24;">🛡️ SLIDE 4 · PORTFOLIO X-RAY 진단</span>
+        <span class="tag ${ac.semi > 60 ? 'bad' : 'good'}">X-RAY ${ac.xrayScore} / 100점</span>
+      </div>
+
+      <div class="grid-3" style="margin-bottom:8px;">
+        <div style="background:rgba(255,255,255,0.07); padding:8px; border-radius:10px;">
+          <span style="font-size:10px; color:#94a3b8; display:block;">총 평가자산</span>
+          <strong class="mono" style="font-size:13px; color:#fff;">${won(ac.nav)}</strong>
+        </div>
+        <div style="background:rgba(255,255,255,0.07); padding:8px; border-radius:10px;">
+          <span style="font-size:10px; color:#94a3b8; display:block;">업종 편중(반도체)</span>
+          <strong class="mono" style="font-size:13px; color:${ac.semi > 60 ? '#f87171' : '#4ade80'};">${ac.semi.toFixed(1)}%</strong>
+        </div>
+        <div style="background:rgba(255,255,255,0.07); padding:8px; border-radius:10px;">
+          <span style="font-size:10px; color:#94a3b8; display:block;">현금 비중</span>
+          <strong class="mono" style="font-size:13px; color:#38bdf8;">${ac.cashRatio.toFixed(1)}%</strong>
+        </div>
+      </div>
+
+      <p style="font-size:11.5px; color:#e2e8f0; margin-bottom:9px;">
+        ${ac.semi > 60
+          ? `⚠️ 현재 반도체 섹터 비중이 ${ac.semi.toFixed(1)}%로 권고 한도(60%)를 초과했습니다. 일부 익절 후 S&P500 또는 배당 ETF 분산이 유리합니다.`
+          : `✅ 섹터 분산과 현금 비중이 안정적으로 유지되고 있습니다.`}
+      </p>
+
+      <div class="grid-2">
+        <button class="cyan-btn" style="font-size:11.5px;" onclick="executeQuickRebalance()">⚡ 반도체 축소 ➔ S&P500 리밸런싱</button>
+        <button style="background:#1e293b; color:#fff; border-color:#334155; font-size:11.5px;" onclick="openAwayGuardModal()">✈️ 여행·부재 가드 설정</button>
+      </div>
+    </div>
+
+    <!-- 계좌 유형 선택 (위탁 / ISA / 연금 IRP) -->
+    <div class="card">
+      <div class="row" style="margin-bottom:8px;">
+        <div>
+          <strong style="font-size:14px;">보유 자산 상세 (장기투자 계좌 확장)</strong>
+          <small style="display:block; font-size:11px; color:var(--muted);">향후 연금·ISA까지 관리 범위 확대 (SLIDE 5)</small>
+        </div>
+        <select onchange="S.account=this.value; render()" style="width:auto; font-size:11px; padding:4px 8px;">
+          <option value="cma" ${S.account === 'cma' ? 'selected' : ''}>일반위탁</option>
+          <option value="isa" ${S.account === 'isa' ? 'selected' : ''}>중개형 ISA</option>
+          <option value="irp" ${S.account === 'irp' ? 'selected' : ''}>퇴직연금 IRP</option>
+        </select>
+      </div>
+
+      ${Object.entries(S.holdings).filter(([_, h]) => h.qty > 0).map(([k, h]) => {
+        const cur = price(k), pnlPct = ((cur / h.avg - 1) * 100);
+        return `
+          <div style="padding:10px 0; border-bottom:1px solid var(--line);">
+            <div class="row">
+              <strong style="font-size:14px; cursor:pointer;" onclick="navigate('stock', '${k}')">${SEED[k].name} (${h.qty}주)</strong>
+              <strong class="mono" style="color:${pnlPct >= 0 ? 'var(--up)' : 'var(--down)'};">${won(h.qty * cur)} (${pct(pnlPct)})</strong>
+            </div>
+            <div class="row" style="margin-top:5px; font-size:11px; color:var(--muted);">
+              <span>평단 ${won(h.avg)} · 현재가 ${won(cur)} · ${SEED[k].sector}</span>
+              <button style="padding:3px 8px; font-size:10.5px;" onclick="navigate('stock', '${k}')">차트분석 ›</button>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function executeQuickRebalance() {
+  const dbH = S.holdings.DB;
+  if (!dbH || dbH.qty < 4) { toast('이미 리밸런싱이 완료되었습니다.'); return; }
+  const sellQty = 4, sellP = price('DB'), buyP = price('SP');
+  const proceeds = sellQty * sellP;
+  dbH.qty -= sellQty;
+  S.cash += proceeds;
+
+  const buyQty = Math.floor(proceeds / buyP);
+  S.cash -= buyQty * buyP;
+  const spH = S.holdings.SP || { qty: 0, avg: buyP };
+  spH.qty += buyQty;
+  S.holdings.SP = spH;
+
+  log('포트폴리오 X-RAY 리밸런싱', `DB하이텍 ${sellQty}주 축소 ➔ KODEX 미국S&P500 ${buyQty}주 편입`);
+  render();
+  toast('✅ 리밸런싱 완료! 반도체 편중이 완화되고 S&P500 ETF가 편입되었습니다.');
+}
+
+/* ============================================================================
+ * 11. NAVI 바텀 도크 (Action Assistant · 1장 계획 카드 · 대화)
+ * ============================================================================ */
+function openNaviDock(view = 'autopilot') {
+  HS.dock = true;
+  HS.dockView = view;
+  render();
+}
+function closeNaviDock() {
+  HS.dock = false;
+  render();
+}
+
+function renderMuseDock() {
+  const k = S.selected, s = SEED[k];
+  return `
+    <div class="dock-backdrop" onclick="closeNaviDock()"></div>
+    <section class="muse-dock" role="dialog" aria-label="NAVI Action Assistant">
+      <div class="dock-handle"></div>
+      <header class="dock-header">
+        <div class="flex">
+          <div class="muse-orb">N</div>
+          <div>
+            <strong style="font-size:14px; display:block;">NAVI Action Assistant</strong>
+            <small style="font-size:11px; color:var(--muted);">현재 종목: ${s.name} (${won(price(k))})</small>
+          </div>
+        </div>
+        <button class="ghost-btn" onclick="closeNaviDock()" style="padding:3px 9px;">닫기 ↓</button>
+      </header>
+
+      <div class="dock-tabs">
+        <button class="${HS.dockView === 'autopilot' ? 'active' : ''}" onclick="HS.dockView='autopilot'; render()">① 오토파일럿 규칙</button>
+        <button class="${HS.dockView === 'action' ? 'active' : ''}" onclick="HS.dockView='action'; render()">② 1장 매매계획 카드</button>
+        <button class="${HS.dockView === 'chat' ? 'active' : ''}" onclick="HS.dockView='chat'; render()">③ AI 대화·질문</button>
+      </div>
+
+      <div class="dock-body">
+        ${HS.dockView === 'autopilot' ? renderDockAutopilotQuick() : (HS.dockView === 'action' ? renderDockOneShotPlan() : renderDockChat())}
+      </div>
+    </section>`;
+}
+
+function renderDockAutopilotQuick() {
+  const ap = S.autopilot;
+  return `
+    <div class="card-soft" style="background:var(--primary-soft); border-color:#bfd0f7;">
+      <strong style="color:var(--primary); font-size:13px;">🤖 [시연 ②] 자연어 오토파일럿 설정</strong>
+      <p style="font-size:11.5px; color:#334155; margin-top:4px;">
+        “관심종목만 총 100만 원, 한 번에 30만 원, 손절 4%, 익절 12%로 오토파일럿 설정해 줘”
+      </p>
+      <button class="primary-btn wide" style="margin-top:8px;" onclick="closeNaviDock(); runPresentationStep('demo2')">
+        오토파일럿 설정 및 과거장 재생 화면으로 이동 ›
+      </button>
+    </div>
+    <div class="card">
+      <div class="row"><span>총 투자 예산</span><strong class="mono">${won(ap.totalBudget)}</strong></div>
+      <div class="row" style="margin-top:6px;"><span>1회 최대 매수</span><strong class="mono">${won(ap.perOrderAmount)}</strong></div>
+      <div class="row" style="margin-top:6px;"><span>손절 / 익절 기준</span><strong class="mono">-${ap.stopLossPct}% / +${ap.takeProfitPct}%</strong></div>
+    </div>`;
+}
+
+function renderDockOneShotPlan() {
+  const k = S.selected, p = price(k);
+  const stop = Math.round(p * (1 - S.autopilot.stopLossPct / 100));
+  const target = Math.round(p * (1 + S.autopilot.takeProfitPct / 100));
+  const qty = Math.max(1, Math.floor(S.autopilot.perOrderAmount / p));
+
+  return `
+    <div class="card">
+      <strong style="font-size:13.5px; display:block; margin-bottom:6px;">✦ ${SEED[k].name} 1장 매매계획 카드</strong>
+      <div class="card-soft">
+        <div class="row"><span>1회 원칙 추천 수량</span><strong class="mono">${qty}주 (${won(qty * p)})</strong></div>
+        <div class="row" style="margin-top:5px;"><span>손절 보호가격 (-${S.autopilot.stopLossPct}%)</span><strong class="mono" style="color:var(--up);">${won(stop)}</strong></div>
+        <div class="row" style="margin-top:5px;"><span>1차 목표가격 (+${S.autopilot.takeProfitPct}%)</span><strong class="mono" style="color:var(--green);">${won(target)}</strong></div>
+      </div>
+      <div class="grid-2">
+        <button class="primary-btn" onclick="closeNaviDock(); navigate('autopilot')">오토파일럿에 맡기기</button>
+        <button class="buy-btn" onclick="closeNaviDock(); HS.order={k:'${k}',side:'buy',qty:${qty}}; navigate('order')">MTS 주문서로 이동</button>
+      </div>
+    </div>`;
+}
+
+function renderDockChat() {
+  return `
+    <div class="flex" style="margin-bottom:8px;">
+      <button onclick="askChat('${SEED[S.selected].name} 지금 사도 돼?')" style="font-size:11px;">🎯 지금 사도 돼?</button>
+      <button onclick="askChat('관심종목만 총 100만 원, 한 번에 30만 원, 손절 4%, 익절 12%로 오토파일럿 설정해 줘')" style="font-size:11px;">🤖 오토파일럿 설정</button>
+    </div>
+    <div style="display:grid; gap:7px; margin-bottom:10px;">
+      ${S.messages.slice(-4).map(m => `
+        <div style="padding:10px 12px; border-radius:12px; font-size:12px; ${m.role === 'user' ? 'background:var(--primary-soft); margin-left:24px;' : 'background:var(--sub); border:1px solid var(--line);'}">
+          ${m.html}
+        </div>
+      `).join('') || `<div class="card-soft" style="font-size:12px; color:var(--muted);">질문을 입력하거나 위 버튼을 눌러보세요.</div>`}
+    </div>
+    <form class="row" onsubmit="event.preventDefault(); const v=$('chatInp').value; if(v){$('chatInp').value=''; askChat(v);}">
+      <input id="chatInp" placeholder="예: 관심종목 총 100만원 오토파일럿 설정해줘">
+      <button class="primary-btn" type="submit" style="white-space:nowrap;">전송</button>
+    </form>`;
+}
+
+function askChat(q) {
+  S.messages.push({ role: 'user', html: esc(q) });
+  if (q.includes('오토파일럿') || q.includes('100만')) {
+    parseAutopilotCommand(q, true);
+    S.messages.push({
+      role: 'agent',
+      html: `요청하신 <strong>[총 ${won(S.autopilot.totalBudget)} / 1회 ${won(S.autopilot.perOrderAmount)} / 손절 -${S.autopilot.stopLossPct}% / 익절 +${S.autopilot.takeProfitPct}%]</strong> 규칙을 정리했습니다. <button class="primary-btn" style="margin-top:6px; padding:4px 8px; font-size:11px;" onclick="closeNaviDock(); navigate('autopilot')">오토파일럿 화면 열기 ›</button>`
+    });
+  } else {
+    const ev = evaluateStrategy(S.selected, HS.strategy);
+    S.messages.push({
+      role: 'agent',
+      html: `<strong>${SEED[S.selected].name} 분석 결과:</strong> ${esc(ev.summaryVerdict)}`
+    });
+  }
+  render();
+}
+
+/* ============================================================================
+ * 12. 모달 (Investment Memory / 여행·부재 가드) 및 유틸리티
+ * ============================================================================ */
+function openMemoryModal() {
+  modal('🧠 SLIDE 4 · Investment Memory (개인화 기억)', `
+    <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
+      NAVI는 고객의 투자성향과 관심종목뿐 아니라 <strong>투자습관, 징크스, 장기 목표까지 기억하고 활용하는 개인화 AI Agent</strong>를 지향합니다.
+    </p>
+    <div class="card-soft" style="display:grid; gap:7px; font-size:12px;">
+      <div class="row"><span>투자자 페르소나</span><strong>${esc(S.memory.persona)}</strong></div>
+      <div class="row"><span>핵심 고민</span><strong style="color:var(--primary);">“${esc(S.memory.coreQuestion)}”</strong></div>
+      <div class="row"><span>선호 타이밍 전략</span><strong>추세추종 (이평선 + RSI/MACD + 볼린저 + 거래량)</strong></div>
+      <div class="row"><span>학습된 징크스 방어</span><strong style="color:var(--up);">과열 구간 추격매수 차단</strong></div>
+      <div class="row"><span>부재·여행 모드 상태</span><strong>${S.memory.awayGuard ? '✈️ 여행 중 오토파일럿 대행 가동' : '국내 체류 (상시 감시)'}</strong></div>
+    </div>
+    <button class="primary-btn wide" onclick="closeModal()">확인</button>
+  `);
+}
+
+function openAwayGuardModal() {
+  modal('✈️ 장기간 여행·부재 중 오토파일럿 가드 (SLIDE 3)', `
+    <p style="font-size:12px; color:var(--muted); margin-bottom:10px;">
+      “제가 장기간 여행을 가거나 시장을 확인하기 어려운 상황에서도 NAVI가 제 관심종목을 점검하고, 정해 둔 조건 안에서 매매를 수행합니다.”
+    </p>
+    <div class="card-soft" style="font-size:12px;">
+      <div class="row"><span>현재 상태</span><strong>${S.memory.awayGuard ? '✈️ 해외여행 부재 가드 ON' : '🏠 일반 감시 모드'}</strong></div>
+      <div class="row" style="margin-top:5px;"><span>적용 규칙</span><strong>예산 ${won(S.autopilot.totalBudget)} · 손절 -${S.autopilot.stopLossPct}% · 익절 +${S.autopilot.takeProfitPct}%</strong></div>
+    </div>
+    <button class="primary-btn wide" onclick="S.memory.awayGuard=!S.memory.awayGuard; S.autopilot.enabled=true; closeModal(); render(); toast(S.memory.awayGuard ? '✈️ 여행·부재 중 오토파일럿 대행 모드가 활성화되었습니다!' : '일반 모드로 복귀했습니다.')">
+      ${S.memory.awayGuard ? '여행·부재 가드 해제' : '✈️ 여행·부재 가드 활성화 및 오토파일럿 연동'}
+    </button>
+  `);
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = $('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.hidden = false;
+  t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    t.hidden = true;
+    t.classList.add('hidden');
+  }, 3200);
+}
+function log(title, detail) {
+  S.logs.unshift({ at: new Date().toLocaleTimeString('ko-KR', { hour12: false }), title, detail });
+}
+function modal(title, html) {
+  const m = $('modal');
+  $('modalTitle').textContent = title;
+  $('modalBody').innerHTML = html;
+  m.hidden = false;
+  m.classList.remove('hidden');
+}
+function closeModal() {
+  const m = $('modal');
+  if (!m) return;
+  m.hidden = true;
+  m.classList.add('hidden');
+}
+function speak(text) {
+  if (!('speechSynthesis' in window)) { toast('이 브라우저는 음성 합성을 지원하지 않습니다.'); return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ko-KR';
+  u.rate = senior() ? 0.9 : 1.0;
+  speechSynthesis.speak(u);
+}
+
+function navigate(page, k) {
+  if (page !== 'autopilot') stopReplayTimer();
+  if (k && SEED[k]) S.selected = k;
+  HS.page = page;
+  HS.dock = false;
+  render();
+}
+
+function setMode(m) {
+  S.prefs.mode = m;
+  document.body.classList.toggle('senior', m === 'senior');
+  render();
+  toast(m === 'senior' ? '👵 어르신모드: 큰 글씨와 음성 안내 중심으로 전환했습니다.' : '📱 일반모드로 전환했습니다.');
+}
+
+/* ============================================================================
+ * 13. 메인 렌더러 및 우측 실시간 인스펙터 업데이트
+ * ============================================================================ */
+function render() {
+  document.body.classList.toggle('senior', senior());
+  const ac = account();
+  const ev = evaluateStrategy(S.selected, HS.strategy);
+  const R = S.replay;
+
+  let pageHTML = '';
+  if (HS.page === 'stock') pageHTML = renderHostStock();
+  else if (HS.page === 'autopilot') pageHTML = renderHostAutopilot();
+  else if (HS.page === 'order') pageHTML = renderHostOrder();
+  else if (HS.page === 'balance') pageHTML = renderHostBalance();
+  else pageHTML = renderHostHome();
+
+  $('phoneRoot').innerHTML = `
+    <!-- 최상단 스마트폰 시스템 바 -->
+    <div class="sys-statusbar">
+      <span class="mono" style="font-weight:700;">09:42</span>
+      <div class="dynamic-island" onclick="navigate('autopilot')">
+        <span class="pulse-dot"></span>
+        <span>${R.playing ? 'REPLAY RUNNING' : (S.autopilot.enabled ? 'AUTOPILOT ON' : 'NAVI ALWAYS-ON')}</span>
+      </div>
+      <div class="flex" style="gap:4px;">
+        <button onclick="openMemoryModal()" style="background:#1e293b; color:#c084fc; border:1px solid #475569; padding:2px 7px; font-size:10px; border-radius:99px;">🧠 Memory</button>
+        <button onclick="openAwayGuardModal()" style="background:#1e293b; color:#38bdf8; border:1px solid #475569; padding:2px 7px; font-size:10px; border-radius:99px;">✈️ 여행가드</button>
+      </div>
+    </div>
+
+    <!-- MTS 상단 도메인 탭 & 모드 스위치 -->
+    <header class="mts-header">
+      <div class="mts-top-bar">
+        <div class="domain-tabs">
+          <button class="${HS.page === 'home' ? 'selected' : ''}" onclick="navigate('home')">홈·Radar</button>
+          <button class="${HS.page === 'stock' ? 'selected' : ''}" onclick="navigate('stock', S.selected)">차트(시연①)</button>
+          <button class="${HS.page === 'autopilot' ? 'selected' : ''}" onclick="navigate('autopilot')">오토파일럿(시연②·③)</button>
+          <button class="${HS.page === 'balance' ? 'selected' : ''}" onclick="navigate('balance')">X-RAY·잔고</button>
+        </div>
+        <div class="mode-pill-switch">
+          <button class="${!senior() ? 'active' : ''}" onclick="setMode('standard')">일반</button>
+          <button class="${senior() ? 'active' : ''}" onclick="setMode('senior')">어르신</button>
+        </div>
+      </div>
+      ${renderMuseAmbientBar()}
+    </header>
+
+    <!-- 중앙 스크롤 뷰 -->
+    <div class="host-view">${pageHTML}</div>
+
+    <!-- 하단 5탭 네비게이션 -->
+    <nav class="mts-bottom-nav">
+      <button class="${HS.page === 'home' ? 'active' : ''}" onclick="navigate('home')"><span>📡</span>홈·레이더</button>
+      <button class="${HS.page === 'stock' ? 'active' : ''}" onclick="navigate('stock', S.selected)"><span>📈</span>차트(시연①)</button>
+      <button onclick="openNaviDock('autopilot')"><span>✦</span>NAVI 챗·설정</button>
+      <button class="${HS.page === 'autopilot' ? 'active' : ''}" onclick="navigate('autopilot')"><span>🤖</span>오토·과거장</button>
+      <button class="${HS.page === 'balance' ? 'active' : ''}" onclick="navigate('balance')"><span>🛡️</span>X-RAY·잔고</button>
+    </nav>
+
+    ${HS.dock ? renderMuseDock() : ''}`;
+
+  // 우측 패널 1: SLIDE 4 4대 핵심 기능 상태 업데이트
+  if ($('fourPillarsStatus')) {
+    $('fourPillarsStatus').innerHTML = `
+      <div class="card-soft" style="margin:0; padding:9px;">
+        <div class="row"><strong>① 포트폴리오 X-RAY</strong><span class="tag ${ac.semi > 60 ? 'warn' : 'good'}">${ac.xrayScore}점</span></div>
+        <small style="color:var(--muted); display:block; margin-top:2px;">반도체 비중 ${ac.semi.toFixed(1)}% · 현금 비중 ${ac.cashRatio.toFixed(1)}%</small>
+      </div>
+      <div class="card-soft" style="margin:0; padding:9px;">
+        <div class="row"><strong>② Signal Radar</strong><span class="tag ${ev.ready ? 'good' : 'warn'}">${ev.stratName}</span></div>
+        <small style="color:var(--muted); display:block; margin-top:2px;">${SEED[S.selected].name}: ${ev.ready ? '진입 조건 충족' : '일부 조건 대기'} (점수 ${ev.score}점)</small>
+      </div>
+      <div class="card-soft" style="margin:0; padding:9px;">
+        <div class="row"><strong>③ Investment Memory</strong><span class="tag info">학습됨</span></div>
+        <small style="color:var(--muted); display:block; margin-top:2px;">추세추종 선호 · 과열 추격매수 차단 · ${S.memory.awayGuard ? '여행가드 ON' : '상시감시'}</small>
+      </div>
+      <div class="card-soft" style="margin:0; padding:9px;">
+        <div class="row"><strong>④ Action & 오토파일럿</strong><span class="tag ${S.autopilot.enabled ? 'good' : 'warn'}">${S.autopilot.enabled ? 'ON' : 'READY'}</span></div>
+        <small style="color:var(--muted); display:block; margin-top:2px;">총 ${won(S.autopilot.totalBudget)} / 1회 ${won(S.autopilot.perOrderAmount)} / -${S.autopilot.stopLossPct}% / +${S.autopilot.takeProfitPct}%</small>
+      </div>`;
+  }
+
+  // 우측 패널 2: 오토파일럿 & 과거장 재생 실시간 인스펙터
+  if ($('agentInspector')) {
+    const posVal = R.position ? R.position.qty * S.markets[R.k][R.curIndex].c : 0;
+    const eq = R.cashRemaining + posVal;
+    const pnl = eq - R.budgetTotal;
+    $('agentInspector').innerHTML = `
+      <div>• 현재 시연 화면: <strong style="color:var(--text);">${HS.page.toUpperCase()}</strong></div>
+      <div>• 분석 종목/전략: <strong style="color:var(--primary);">${SEED[S.selected].name} (${ev.stratName})</strong></div>
+      <div>• 이평선 정배열: <strong>5일(${num(ev.a.m5)}) > 20일(${num(ev.a.m20)}) > 60일(${num(ev.a.m60)}) > 120일(${num(ev.a.m120)})</strong></div>
+      <div>• 모멘텀/강도: <strong>RSI ${ev.a.r.toFixed(1)} · MACD ${Math.round(ev.a.macd)} · ADX ${ev.a.adx.toFixed(1)}</strong></div>
+      <hr style="border:0; border-top:1px solid var(--line); margin:7px 0;">
+      <div>• 과거장 재생 진행: <strong>Day ${R.curIndex - R.startIndex + 1} / 55 (${S.markets[R.k][R.curIndex].date})</strong></div>
+      <div>• 오토파일럿 손익: <strong style="color:${pnl >= 0 ? 'var(--up)' : 'var(--down)'};">${pnl >= 0 ? '+' : ''}${won(pnl)} (비용 ${won(R.totalFees)} / MDD ${R.mddPct.toFixed(2)}%)</strong></div>
+      <div style="margin-top:6px; padding:7px; background:var(--sub); border-radius:8px; font-size:11px; color:var(--text);">
+        <strong>최근 판단:</strong> ${esc(R.events[0]?.title || S.logs[0]?.title || '-')}
+      </div>`;
+  }
+}
+
+window.NAVI = { getState: () => clone(S), analyze, evaluateStrategy, account, runPresentationStep };
+render();
+</script>
+</body>
+</html>
