@@ -1,0 +1,2893 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>현대차증권 NAVI | Always-On AI Investment Action Agent</title>
+  
+  <!-- Tailwind CSS & Font Awesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --navy-bg: #070d1e;
+      --navy-card: #0f172a;
+      --navy-surface: #1e293b;
+      --blue-main: #2563eb;
+      --cyan-tech: #38bdf8;
+      --purple-agent: #8b5cf6;
+      --emerald-up: #ef4444; /* 한국 MTS 관행: 상승=빨강 */
+      --blue-down: #2563eb;  /* 한국 MTS 관행: 하락=파랑 */
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
+      background: #060b17;
+      color: #1e293b;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Mobile Device Frame */
+    .mobile-wrapper {
+      width: 100%;
+      max-width: 430px;
+      height: 920px;
+      max-height: 100vh;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 10px #0f172a, 0 0 35px rgba(56, 189, 248, 0.25);
+    }
+    @media (max-width: 480px) {
+      .mobile-wrapper {
+        max-width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
+      }
+    }
+
+    body.senior-mode {
+      font-size: 112% !important;
+    }
+    body.senior-mode .senior-scale-up {
+      transform: scale(1.06);
+      transform-origin: left top;
+    }
+
+    /* Senior Mode High-Contrast & Warm Accent Palette */
+    body.senior-mode .mobile-wrapper {
+      background: #fdfbf7;
+    }
+    body.senior-mode .navi-hud-card {
+      background: linear-gradient(135deg, #0b1a30 0%, #152238 100%);
+      border: 2px solid #f59e0b;
+      box-shadow: 0 12px 30px rgba(245, 158, 11, 0.2);
+    }
+    body.senior-mode button {
+      font-size: 115% !important;
+      min-height: 44px;
+    }
+    body.senior-mode input {
+      font-size: 120% !important;
+    }
+
+    /* Voice Wave Animation for TTS */
+    @keyframes soundWave {
+      0%, 100% { height: 6px; }
+      50% { height: 22px; }
+    }
+    .voice-bar {
+      width: 3px;
+      background: #38bdf8;
+      border-radius: 3px;
+      display: inline-block;
+      animation: soundWave 1.2s ease-in-out infinite;
+    }
+    .voice-bar:nth-child(2) { animation-delay: 0.15s; }
+    .voice-bar:nth-child(3) { animation-delay: 0.3s; }
+    .voice-bar:nth-child(4) { animation-delay: 0.45s; }
+    .voice-bar:nth-child(5) { animation-delay: 0.2s; }
+
+    .navi-hud-card {
+      background: linear-gradient(135deg, rgba(10, 25, 47, 0.98) 0%, rgba(15, 23, 42, 0.96) 100%);
+      border: 1.5px solid #38bdf8;
+      box-shadow: 0 10px 25px rgba(2, 132, 199, 0.25);
+      border-radius: 16px;
+      color: #ffffff;
+    }
+
+    /* Native Bottom Sheet & Modal Backdrop */
+    .app-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #ffffff;
+      border-top-left-radius: 24px;
+      border-top-right-radius: 24px;
+      box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.45);
+      z-index: 70;
+      transform: translateY(105%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      max-height: 90%;
+      overflow-y: auto;
+      border-top: 1px solid #cbd5e1;
+    }
+    .app-sheet.open { transform: translateY(0); }
+
+    .app-modal {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 80;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .app-modal.open { display: flex; }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="mobile-wrapper rounded-[44px]">
+    
+    <!-- Top System Bar & Always-On Dynamic Island -->
+    <header class="h-11 bg-slate-900 text-white px-4 flex items-center justify-between text-xs font-mono select-none relative z-50 shrink-0">
+      <span id="statusBarClock" class="font-bold text-[11px]">14:30</span>
+      
+      <!-- Interactive Dynamic Island -->
+      <div id="dynamicIsland" onclick="handleIslandClick()" class="h-7 px-3 bg-black rounded-full flex items-center justify-center gap-1.5 border border-slate-800 cursor-pointer transition-all duration-300 shadow-md">
+        <span id="islandDot" class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span id="islandText" class="text-[10px] text-cyan-300 font-sans font-bold">NAVI ALWAYS-ON</span>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <!-- Agent Brain Profile Button -->
+        <button onclick="openAgentBrainModal()" class="text-[10px] bg-indigo-950 text-cyan-300 border border-indigo-700/60 px-2 py-0.5 rounded-full font-bold flex items-center gap-1" title="NAVI Agent Brain (기억 및 사고회로)">
+          <i class="fa-solid fa-brain text-[10px] text-purple-400"></i> Brain
+        </button>
+        <!-- Senior Easy Mode Toggle & Voice Helper -->
+        <button onclick="toggleSeniorMode()" id="seniorModeBtn" class="text-[10px] bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 px-2.5 py-0.5 rounded-full border border-amber-400 text-white font-extrabold flex items-center gap-1 shadow-sm" title="어르신 맞춤 안심 모드">
+          <i class="fa-solid fa-person-cane text-amber-200"></i> <span id="seniorBtnLabel">어르신 모드</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Push-Style Floating Alert Banner -->
+    <div id="pushNotificationBanner" class="hidden absolute top-12 left-3 right-3 z-50 bg-slate-900/98 backdrop-blur-md text-white p-3.5 rounded-2xl border border-cyan-400 shadow-2xl transition-all duration-300">
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+          <span class="text-[10px] font-bold text-cyan-400" id="pushBannerCategory">NAVI SIGNAL RADAR</span>
+        </div>
+        <button onclick="dismissPushBanner()" class="text-slate-400 hover:text-white text-xs">✕</button>
+      </div>
+      <div class="text-xs font-bold text-white mb-0.5" id="pushBannerTitle">DB하이텍 · 20일선 지지 반등</div>
+      <div class="text-[11px] text-slate-300 mb-2 leading-tight" id="pushBannerDesc">거래량 +238% 폭증 &amp; 외국인 5분 순매수 전환 확인</div>
+      <div class="flex gap-2">
+        <button onclick="handlePushAction('chart')" class="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold">
+          차트 타점 보기
+        </button>
+        <button onclick="handlePushAction('order')" class="flex-1 py-1.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 text-white text-[11px] font-bold">
+          ⚡ 100만원 주문화면
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN SCREEN VIEWPORT -->
+    <div class="flex-1 relative overflow-hidden bg-slate-50 flex flex-col">
+
+      <!-- ================= 1. HOME SCREEN ================= -->
+      <section id="screen-home" class="screen-view h-full flex flex-col overflow-y-auto pb-16">
+        
+        <!-- App Header & Quick Mode Status -->
+        <div class="p-3 bg-white border-b border-slate-200 flex items-center justify-between sticky top-0 z-20 shadow-sm">
+          <div class="flex items-center gap-2">
+            <span class="text-blue-600 font-black text-lg tracking-tight">현대차증권 NAVI</span>
+            <span class="text-[9.5px] px-1.5 py-0.5 bg-purple-100 text-purple-700 font-bold rounded">Action OS</span>
+          </div>
+          <div class="flex items-center gap-2.5 text-slate-600 text-xs">
+            <button onclick="openAwayModeSheet()" id="btnAwayModeBadge" class="text-[10.5px] text-indigo-700 font-bold flex items-center gap-1 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200 hover:bg-indigo-100 transition">
+              <i class="fa-solid fa-plane-departure text-indigo-600"></i> 부재·여행가드
+            </button>
+            <div class="relative cursor-pointer" onclick="triggerSimulatedSignalNow()">
+              <i class="fa-solid fa-bell text-sm text-slate-700"></i>
+              <span id="homeUnreadBadge" class="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white rounded-full text-[8px] font-bold flex items-center justify-center">3</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Proactive Agent Context Banner (Always-On Agent) -->
+        <div id="homeProactiveTicker" class="mx-3 mt-2.5 p-2.5 rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white border border-indigo-500/40 flex items-center justify-between text-[11px] shadow-sm">
+          <div class="flex items-center gap-2 truncate">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping shrink-0"></span>
+            <span id="proactiveTickerText" class="truncate text-cyan-200">💡 <strong>NAVI Context:</strong> "현재 국내 체류 중 · 반도체 편중(68.4%) 상시 감시 가동"</span>
+          </div>
+          <button onclick="openAgentBrainModal()" class="px-2 py-0.5 rounded bg-cyan-400 text-slate-950 font-bold text-[10px] shrink-0 ml-1">
+            원칙 보기
+          </button>
+        </div>
+
+        <!-- CREATIVE AGENT ACTION SUITE (어르신 안심 · 제2의 월급 배당 · 새벽 방어막) -->
+        <div class="px-3 pt-2.5 grid grid-cols-3 gap-2">
+          <!-- 1. Voice Briefing for Seniors -->
+          <button onclick="playSeniorVoiceBriefing()" class="p-2.5 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100 border border-amber-200 text-left hover:shadow-md transition flex flex-col justify-between group">
+            <div class="flex justify-between items-center w-full">
+              <span class="w-7 h-7 rounded-xl bg-amber-500 text-white flex items-center justify-center text-xs shadow-sm">
+                <i class="fa-solid fa-volume-high"></i>
+              </span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-800 font-bold">음성 말벗</span>
+            </div>
+            <div class="mt-1.5">
+              <strong class="text-xs text-amber-950 block font-bold leading-tight">소리로 듣는 브리핑</strong>
+              <span class="text-[9.5px] text-amber-800">눈 편하게 말로 설명</span>
+            </div>
+          </button>
+
+          <!-- 2. Dividend Salary Planner -->
+          <button onclick="openDividendSalarySheet()" class="p-2.5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-100 border border-emerald-200 text-left hover:shadow-md transition flex flex-col justify-between group">
+            <div class="flex justify-between items-center w-full">
+              <span class="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xs shadow-sm">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+              </span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-200 text-emerald-800 font-bold">월 50만</span>
+            </div>
+            <div class="mt-1.5">
+              <strong class="text-xs text-emerald-950 block font-bold leading-tight">월급 배당 설계기</strong>
+              <span class="text-[9.5px] text-emerald-800">따박따박 월 용돈</span>
+            </div>
+          </button>
+
+          <!-- 3. Black Swan Night Guard -->
+          <button onclick="openBlackSwanDefenseModal()" class="p-2.5 rounded-2xl bg-gradient-to-br from-slate-900 to-indigo-950 border border-indigo-500/40 text-left hover:shadow-md transition flex flex-col justify-between group text-white">
+            <div class="flex justify-between items-center w-full">
+              <span class="w-7 h-7 rounded-xl bg-cyan-500 text-slate-950 flex items-center justify-center text-xs shadow-sm font-bold">
+                <i class="fa-solid fa-shield-cat"></i>
+              </span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-indigo-900/80 text-cyan-300 font-bold border border-cyan-500/30">새벽 가드</span>
+            </div>
+            <div class="mt-1.5">
+              <strong class="text-xs text-white block font-bold leading-tight">블랙스완 방어막</strong>
+              <span class="text-[9.5px] text-slate-300">밤새 대신 지키는 AI</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- HERO: NAVI LIVE SIGNAL RADAR -->
+        <div class="p-3 pb-1">
+          <div class="navi-hud-card p-4 relative overflow-hidden shadow-lg">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-radar text-cyan-400"></i> NAVI LIVE SIGNAL RADAR
+              </span>
+              <span class="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full font-bold">
+                기술적 신호 감지
+              </span>
+            </div>
+
+            <div class="flex items-baseline justify-between mt-2 mb-1.5">
+              <div>
+                <span class="text-sm font-bold text-white block">DB하이텍 (000990)</span>
+                <span class="text-xl font-black font-mono text-red-400">131,700원</span>
+                <span class="text-xs text-red-400 font-bold ml-1">+4.44% ▲</span>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] text-slate-400 block">타이밍 스코어</span>
+                <span class="text-xl font-black text-cyan-300 font-mono">76 <span class="text-xs text-slate-400">/100</span></span>
+              </div>
+            </div>
+
+            <!-- Signal Evidence Pills -->
+            <div class="grid grid-cols-2 gap-1.5 bg-white/5 p-2 rounded-xl border border-white/10 text-[10.5px] text-slate-200 mb-2.5">
+              <div>• 20일 이동평균선 지지 반등</div>
+              <div>• 거래량 +238% 폭증 (수급)</div>
+              <div>• MACD Oscillator 양전환 (+1.45)</div>
+              <div>• Stage 2 본격 상승기 국면 유지</div>
+            </div>
+
+            <div class="bg-cyan-950/70 p-2.5 rounded-xl border border-cyan-500/30 text-[11px] text-slate-200 leading-snug mb-3">
+              <div class="flex items-center justify-between mb-1">
+                <strong class="text-cyan-300 flex items-center gap-1">
+                  <i class="fa-solid fa-sparkles text-cyan-400"></i> NAVI 에이전트 가이드:
+                </strong>
+                <button onclick="readAloudText('DB하이텍은 최근 한 달 평균 가격에서 안정적으로 튀어 오르고 있으며, 큰손들의 거래량이 크게 늘어 지금 들어가기 알맞은 때입니다.')" class="text-[10px] text-cyan-300 hover:text-white flex items-center gap-1 font-bold">
+                  <i class="fa-solid fa-volume-high"></i> 말로 듣기
+                </button>
+              </div>
+              <p class="text-slate-300 font-normal m-0" id="hudGuideTextDesc">
+                “20일선을 지지한 후 거래량과 외국인 수급이 동시에 증가하며 단기 추세가 강화되는 진입 타점 구간입니다.”
+              </p>
+              <div id="seniorEasyTranslation" class="hidden mt-1.5 pt-1.5 border-t border-cyan-800/80 text-[11.5px] text-amber-300 font-bold">
+                👴 <strong>어르신 쉬운 말:</strong> "한 달 평균치 바닥에서 튼튼하게 반등 중이고 사려는 사람이 몰리고 있어 위험보다 기대 이익이 3배 높습니다."
+              </div>
+            </div>
+
+            <div class="flex gap-2">
+              <button onclick="selectStockAndGoChart('DB하이텍')" class="flex-1 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold text-center">
+                차트 및 HUD 확인
+              </button>
+              <button onclick="openAmountOrderModal('DB하이텍', 1000000)" class="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold text-center">
+                ⚡ 100만원 주문
+              </button>
+              <button onclick="openAlertBuilder('DB하이텍')" class="px-3 py-2 rounded-xl bg-slate-800 text-cyan-300 border border-slate-700 text-xs font-bold">
+                알림 설정
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT SIGNAL RADAR FEED STREAM -->
+        <div class="p-3 pt-1">
+          <div class="flex justify-between items-center mb-1.5 px-0.5">
+            <span class="text-xs font-bold text-slate-900">실시간 감지 신호 피드</span>
+            <button onclick="triggerSimulatedSignalNow()" class="text-[10px] text-blue-600 hover:underline flex items-center gap-1 font-bold">
+              <i class="fa-solid fa-rotate-right"></i> 새 신호 시뮬레이션
+            </button>
+          </div>
+          <div id="homeSignalFeedContainer" class="space-y-1.5">
+            <!-- Dynamic Feed items -->
+          </div>
+        </div>
+
+        <!-- CATEGORY TABS & STOCK LIST -->
+        <div class="px-3 pb-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm">
+            <div class="flex border-b border-slate-100 pb-2 mb-2 gap-4 text-xs font-bold">
+              <button onclick="switchCategoryTab('domestic')" id="tabBtn-domestic" class="text-blue-600 border-b-2 border-blue-600 pb-1">국내주식</button>
+              <button onclick="switchCategoryTab('overseas')" id="tabBtn-overseas" class="text-slate-400 hover:text-slate-700 pb-1">해외</button>
+              <button onclick="switchCategoryTab('pension')" id="tabBtn-pension" class="text-slate-400 hover:text-slate-700 pb-1">연금</button>
+            </div>
+
+            <div id="stockListContainer" class="divide-y divide-slate-100">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2. ADVANCED CHART SCREEN ================= -->
+      <section id="screen-chart" class="screen-view h-full flex flex-col overflow-y-auto pb-16 hidden bg-slate-900 text-white">
+        
+        <!-- Chart Header -->
+        <div class="p-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between sticky top-0 z-20">
+          <div class="flex items-center gap-2">
+            <button onclick="switchScreen('home')" class="text-slate-400 hover:text-white text-sm pr-1">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span id="chartStockName" class="text-sm font-bold text-white">DB하이텍</span>
+                <span id="chartStockCode" class="text-[10.5px] text-slate-400 font-mono">000990</span>
+                <span id="chartStockStage" class="text-[9.5px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold">Stage 2</span>
+              </div>
+              <div class="flex items-baseline gap-2">
+                <span id="chartPriceDisplay" class="text-lg font-black font-mono text-red-400">131,700원</span>
+                <span id="chartChangeDisplay" class="text-xs text-red-400 font-bold">+4.44% ▲</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button onclick="openAlertBuilder(appState.currentStock)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 text-cyan-400 border border-slate-700 text-[10.5px] font-bold flex items-center gap-1">
+              <i class="fa-regular fa-bell"></i> 알림
+            </button>
+            <button onclick="openAmountOrderModal(appState.currentStock, 1000000)" class="px-3 py-1.5 rounded-lg bg-red-600 text-white text-[10.5px] font-bold">
+              주문
+            </button>
+          </div>
+        </div>
+
+        <!-- Technical Indicators Toggle Bar -->
+        <div class="px-3 py-1.5 bg-slate-950 border-b border-slate-800 flex items-center gap-1.5 text-[10.5px] overflow-x-auto">
+          <button onclick="toggleIndicator('ma')" id="btn-ind-ma" class="px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition">MA 5/20/60</button>
+          <button onclick="toggleIndicator('bb')" id="btn-ind-bb" class="px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition">볼린저 밴드</button>
+          <button onclick="toggleIndicator('volume')" id="btn-ind-volume" class="px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition">거래량</button>
+          <button onclick="toggleIndicator('rsi')" id="btn-ind-rsi" class="px-2.5 py-1 rounded bg-slate-800 text-slate-400 font-bold transition">RSI</button>
+          <button onclick="toggleIndicator('macd')" id="btn-ind-macd" class="px-2.5 py-1 rounded bg-slate-800 text-slate-400 font-bold transition">MACD</button>
+          <button onclick="toggleIndicator('supply')" id="btn-ind-supply" class="px-2.5 py-1 rounded bg-slate-800 text-slate-400 font-bold transition">수급</button>
+        </div>
+
+        <!-- Interactive SVG Candlestick Canvas -->
+        <div class="p-3 bg-slate-900 select-none space-y-2">
+          <div class="w-full h-48 bg-slate-950 rounded-2xl p-2 border border-slate-800 relative overflow-hidden">
+            <svg id="svgCandleCanvas" class="w-full h-full" viewBox="0 0 380 180">
+              <!-- Dynamically rendered: Candlestick, BB, MAs, Volume -->
+            </svg>
+          </div>
+
+          <!-- RSI Sub-Panel -->
+          <div id="panel-rsi-indicator" class="hidden p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-[10.5px]">
+            <div class="flex justify-between text-slate-400 mb-1">
+              <span>RSI (14): <strong id="chartRsiValue" class="text-red-400">61.4</strong> (모멘텀 지속)</span>
+              <span>과열 70 / 침체 30</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div id="chartRsiBar" class="bg-red-500 h-full" style="width: 61.4%;"></div>
+            </div>
+          </div>
+
+          <!-- MACD Sub-Panel -->
+          <div id="panel-macd-indicator" class="hidden p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-[10.5px]">
+            <div class="flex justify-between items-center text-slate-400 mb-1.5">
+              <span>MACD (12, 26, 9)</span>
+              <span class="text-emerald-400 font-bold">골든크로스 상승 발산 (+1.45)</span>
+            </div>
+            <div class="flex items-center gap-2 text-[10px] text-slate-300">
+              <span>DIF: <strong class="text-amber-400">2.18</strong></span>
+              <span>Signal: <strong class="text-blue-400">0.73</strong></span>
+              <span>Oscillator: <strong class="text-red-400">+1.45</strong></span>
+            </div>
+            <div class="mt-1.5 h-6 w-full bg-slate-900 rounded flex items-center justify-around px-2 border border-slate-800">
+              <div class="w-2.5 bg-blue-500 h-2 rounded-t"></div>
+              <div class="w-2.5 bg-blue-400 h-1.5 rounded-t"></div>
+              <div class="w-2.5 bg-red-400 h-2 rounded-b"></div>
+              <div class="w-2.5 bg-red-500 h-3.5 rounded-b"></div>
+              <div class="w-2.5 bg-red-500 h-4.5 rounded-b"></div>
+              <div class="w-2.5 bg-red-400 h-5 rounded-b"></div>
+            </div>
+          </div>
+
+          <!-- Supply & Demand Sub-Panel -->
+          <div id="panel-supply-indicator" class="hidden p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-[10.5px]">
+            <div class="flex justify-between items-center text-slate-400 mb-1.5">
+              <span>수급 Radar (실시간 틱 체결 분석)</span>
+              <span class="text-cyan-400 font-bold">외국인 5분 연속 매수</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[10px]">
+              <div class="p-1.5 bg-slate-900 rounded border border-slate-800">
+                <span class="text-slate-400 block">외국인 5분 순매수</span>
+                <strong class="text-red-400 text-xs">+37.2 억원</strong>
+              </div>
+              <div class="p-1.5 bg-slate-900 rounded border border-slate-800">
+                <span class="text-slate-400 block">기관 당일 순매수</span>
+                <strong class="text-red-400 text-xs">+14,200 주</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Historical Replay Time-Machine Slider -->
+          <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-[11px]">
+            <div class="flex justify-between items-center text-slate-400 mb-1">
+              <span><i class="fa-solid fa-clock-rotate-left text-cyan-400"></i> 타임머신 Replay</span>
+              <span id="replayDateLabel" class="text-cyan-300 font-mono font-bold">2026.09.28 (현재 시점)</span>
+            </div>
+            <input type="range" id="chartReplaySlider" min="1" max="4" value="4" step="1" oninput="handleReplaySlider(this.value)" class="w-full accent-cyan-400 cursor-pointer">
+            <div id="replaySummaryText" class="text-[10.5px] text-slate-300 mt-1.5 leading-snug">
+              ※ 현재 시뮬레이션: 20일선 지지 반등 및 전고점 돌파 테스트 구간입니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- DYNAMIC CONTEXT-AWARE PRICE SETUP HUD CARD -->
+        <div class="p-3 pt-0">
+          <div id="naviPriceSetupHudContainer">
+            <!-- Situation A, B, C injected dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 3. STATEFUL ACTION CHAT ================= -->
+      <section id="screen-chat" class="screen-view h-full flex flex-col justify-between hidden bg-slate-50">
+        
+        <!-- Chat Header with Memory Focus -->
+        <div class="p-3 bg-white border-b border-slate-200 flex justify-between items-center sticky top-0 z-20 shadow-sm">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-400 text-white flex items-center justify-center text-xs font-bold">N</div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <strong class="text-xs text-slate-900 block leading-tight">NAVI Action Agent</strong>
+                <span id="chatFocusTag" class="text-[9px] px-1.5 py-0.2 rounded bg-blue-100 text-blue-700 font-bold">Focus: DB하이텍</span>
+              </div>
+              <span class="text-[9px] text-slate-400 font-mono">Agent Brain &amp; Digital Twin Synced</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="openAgentBrainModal()" class="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full font-bold border border-indigo-200">
+              <i class="fa-solid fa-brain"></i> 기억
+            </button>
+            <button onclick="openPBHandoffModal()" class="text-[10px] bg-purple-50 text-purple-700 px-2 py-1 rounded-full font-bold border border-purple-200">
+              PB 인계
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat Stream Flow -->
+        <div id="chatMessageFlow" class="p-3 space-y-3 flex-1 overflow-y-auto text-xs">
+          <!-- Intro Bubble -->
+          <div class="p-3 bg-white rounded-2xl border border-slate-200 text-slate-700 leading-relaxed shadow-sm">
+            안녕하세요! 사용자님의 투자 사고회로와 포트폴리오를 기억하고 복합 작업을 대행하는 <strong>상시 자율 구동형 Personal Action Agent 『NAVI』</strong>입니다.<br>
+            종목 분석, What-If 비중 연산, 정기투자 미션 등록, 여행 중 리스크 방어를 <strong>자연어로 직접 입력</strong>해 보세요.
+          </div>
+
+          <!-- Contextual Quick Action Prompt Chips -->
+          <div class="space-y-1.5">
+            <div class="text-[10px] font-bold text-slate-400 px-0.5 flex justify-between items-center">
+              <span>💡 NAVI 연속 대화 추천 시나리오</span>
+              <span class="text-amber-600 font-bold text-[9.5px]">말씀만 하셔도 척척 조립</span>
+            </div>
+            <button onclick="triggerQuickChatPrompt('어르신용으로 오늘 내 계좌 알기 쉽게 설명해줘')" class="w-full text-left p-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 hover:bg-amber-100 transition flex items-center justify-between">
+              <span>👉 "어르신용으로 오늘 내 계좌 알기 쉽게 설명해줘"</span>
+              <i class="fa-solid fa-volume-high text-amber-600 text-[10px]"></i>
+            </button>
+            <button onclick="triggerQuickChatPrompt('매달 50만원씩 제2의 월급 배당 받으려면 어떻게 해?')" class="w-full text-left p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-900 hover:bg-emerald-100 transition">
+              👉 "매달 50만원씩 제2의 월급 배당 받으려면 어떻게 해?" (배당 플래너)
+            </button>
+            <button onclick="triggerQuickChatPrompt('DB하이텍 지금 어때?')" class="w-full text-left p-2 rounded-xl bg-blue-50 border border-blue-200 text-[11px] text-blue-900 hover:bg-blue-100 transition">
+              👉 "DB하이텍 지금 어때?" (기술적 분석 &amp; 3대 가격선)
+            </button>
+            <button onclick="triggerQuickChatPrompt('그럼 100만원 더 사면?')" class="w-full text-left p-2 rounded-xl bg-indigo-50 border border-indigo-200 text-[11px] text-indigo-900 hover:bg-indigo-100 transition">
+              👉 "그럼 100만원 더 사면?" (맥락 기억 What-If 시뮬레이션)
+            </button>
+            <button onclick="triggerQuickChatPrompt('20일선 오면 알려줘')" class="w-full text-left p-2 rounded-xl bg-teal-50 border border-teal-200 text-[11px] text-teal-900 hover:bg-teal-100 transition">
+              👉 "20일선 오면 알려줘" (종목 맥락 유지 Alert 등록)
+            </button>
+            <button onclick="triggerQuickChatPrompt('나 도쿄 여행 가는데 내 계좌 지켜줘')" class="w-full text-left p-2 rounded-xl bg-purple-50 border border-purple-200 text-[11px] text-purple-900 hover:bg-purple-100 transition">
+              👉 "나 도쿄 여행 가는데 내 계좌 지켜줘" (NAVI Away Guard 설정)
+            </button>
+          </div>
+
+          <!-- Thinking Progress UX Indicator -->
+          <div id="chatThinkingContainer" class="hidden">
+            <div class="p-3 bg-slate-900 text-cyan-300 rounded-2xl border border-cyan-500/40 text-[11px] font-mono space-y-1 shadow-md">
+              <div class="flex items-center gap-2 text-xs text-white font-bold">
+                <span class="animate-spin text-cyan-400">⚙️</span> NAVI Agent Brain 분석 및 행동 조립 중...
+              </div>
+              <div id="thinkStep1" class="text-cyan-300">✓ 의도 및 종목 맥락 대조</div>
+              <div id="thinkStep2" class="text-slate-400">○ Digital Twin 포트폴리오 영향 계산</div>
+              <div id="thinkStep3" class="text-slate-400">○ Agent Brain 원칙(ETF 선호/집중도) 검증</div>
+              <div id="thinkStep4" class="text-slate-400">○ 1-Tap 실행 대행 카드 조립</div>
+            </div>
+          </div>
+
+          <!-- Dynamic Chat Message Stream -->
+          <div id="dynamicChatContainer" class="space-y-3"></div>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <div class="p-2.5 bg-white border-t border-slate-200 flex items-center gap-2">
+          <!-- Voice Input Trigger Button -->
+          <button onclick="triggerVoiceInputSimulation()" class="w-9 h-9 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-800 flex items-center justify-center text-xs transition border border-amber-300" title="마이크 음성 입력">
+            <i class="fa-solid fa-microphone"></i>
+          </button>
+          <input type="text" id="liveChatInput" placeholder="무엇이든 말씀해 보세요 (예: '삼전 어때?', '월배당 50만원 만들어줘')" onkeydown="if(event.key==='Enter') sendLiveChat()" class="flex-1 px-3.5 py-2.5 rounded-full border border-slate-300 text-xs focus:outline-none focus:border-blue-600 bg-slate-50">
+          <button onclick="sendLiveChat()" id="btnSendChat" class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs hover:bg-blue-500 transition shadow-sm">
+            <i class="fa-solid fa-arrow-up"></i>
+          </button>
+        </div>
+      </section>
+
+      <!-- ================= 4. BALANCE & PORTFOLIO DIGITAL TWIN ================= -->
+      <section id="screen-balance" class="screen-view h-full flex flex-col overflow-y-auto pb-16 hidden bg-slate-50">
+        
+        <!-- Account Summary -->
+        <div class="p-3.5 bg-white border-b border-slate-200 shadow-sm">
+          <div class="flex justify-between items-center text-xs text-slate-500 mb-1">
+            <span>22438171-11 [CMA위탁] 김태영</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">Digital Twin 연동</span>
+          </div>
+          <div class="flex justify-between items-baseline">
+            <span class="text-xs text-slate-500">순자산 평가</span>
+            <span id="balanceNetAsset" class="text-xl font-black font-mono text-slate-900">4,704,305원</span>
+          </div>
+          <div class="flex justify-between text-xs text-slate-500 mt-1">
+            <span>D+2 예수금: <strong id="balanceCash" class="text-slate-800">1,500,000원</strong></span>
+            <span>평가손익: <strong id="balanceTotalProfit" class="text-red-500">+129,505원 (+4.21%)</strong></span>
+          </div>
+        </div>
+
+        <div class="p-3 space-y-3">
+          <!-- PORTFOLIO X-RAY CARD -->
+          <div class="p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 shadow-md">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-virus"></i> Portfolio X-Ray 진단
+              </span>
+              <span id="xrayScoreBadge" class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-red-950 text-red-300 border border-red-800">
+                68 / 100점 (편중주의)
+              </span>
+            </div>
+
+            <div class="p-2.5 bg-red-950/60 border border-red-500/40 rounded-xl text-xs text-red-200 mb-3 leading-relaxed">
+              ⚠️ <strong>IT·반도체 섹터 집중도 68.4%</strong><br>
+              나스닥 급락 시 취약. S&amp;P500 또는 배당 ETF로 5단계 리밸런싱을 권고합니다.
+            </div>
+
+            <div class="flex gap-2">
+              <button onclick="openRebalanceSheet()" class="flex-1 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold text-center">
+                5단계 리밸런싱 실행
+              </button>
+              <button onclick="openWhatIfSheet('DB하이텍', 5000000)" class="px-3 py-2 rounded-xl bg-slate-800 text-cyan-300 text-xs hover:text-white border border-slate-700 font-bold">
+                WHAT-IF 계산
+              </button>
+            </div>
+          </div>
+
+          <!-- HOLDINGS LIST -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm">
+            <div class="flex justify-between items-center text-xs font-bold text-slate-900 border-b border-slate-100 pb-2 mb-2">
+              <span>보유 종목 잔고</span>
+              <span class="text-slate-400 text-[11px]">수량 · 수익률</span>
+            </div>
+            <div id="balanceHoldingsList" class="divide-y divide-slate-100 text-xs">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Market Shock Sensitivity Card -->
+          <div class="p-3 bg-white rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <strong class="text-xs text-slate-900 block">Market Shock 스트레스 테스트</strong>
+              <span class="text-[10px] text-slate-500">나스닥 -8% 급변 시 내 계좌 영향액 산출</span>
+            </div>
+            <button onclick="openMarketShockSheet()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">
+              테스트 실행
+            </button>
+          </div>
+
+          <!-- Family Safety Link for Seniors (자녀 안심 가드레일) -->
+          <div class="p-3.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200 shadow-sm space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                <i class="fa-solid fa-heart-circle-check text-amber-600"></i> 자녀 안심 보호망 (Family Safe Link)
+              </span>
+              <span class="text-[9.5px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">동기화 완료</span>
+            </div>
+            <p class="text-[11px] text-amber-900 leading-snug">
+              어르신께서 100만 원 이상 매수하시거나, 충동적 급등주 매수 위험이 감지되면 <strong>지정된 보호자(자녀) 스마트폰에 안심 승인 알림</strong>이 전송됩니다.
+            </p>
+            <div class="flex items-center justify-between pt-1 text-[10.5px]">
+              <span class="text-slate-600">안심 보호자: <strong>장남 김진우 (010-9***-1234)</strong></span>
+              <button onclick="simulateFamilyNotification()" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[10px]">
+                알림 테스트
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 5. AUTO EXECUTION & TIMELINE SCREEN ================= -->
+      <section id="screen-auto" class="screen-view h-full flex flex-col overflow-y-auto pb-16 hidden bg-slate-900 text-white p-3 space-y-3">
+        
+        <!-- Master Switch Card -->
+        <div class="p-4 bg-slate-950 rounded-2xl border border-cyan-500/40 shadow-lg">
+          <div class="flex justify-between items-center mb-2">
+            <div>
+              <strong class="text-sm font-bold text-cyan-300 block">NAVI Auto Execution Simulation</strong>
+              <span class="text-[10px] text-slate-400">사전 설정 조건 충족 시 모의 자동체결</span>
+            </div>
+            <button onclick="handleAutoMasterToggle()" id="autoMasterToggleBtn" class="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">
+              OFF
+            </button>
+          </div>
+          <p class="text-[10.5px] text-slate-300 leading-snug">
+            ※ 일방적 일임 매매가 아니며, 4단계 확인과 전자 서명을 마친 지정 규칙에 한하여 안전하게 모의 실행됩니다.
+          </p>
+        </div>
+
+        <!-- Agent Missions (Recurring Plans & Routines) -->
+        <div class="p-3.5 bg-slate-950 rounded-2xl border border-indigo-500/40 text-xs space-y-2">
+          <div class="flex justify-between items-center border-b border-indigo-900/60 pb-1.5">
+            <strong class="text-xs text-indigo-300 font-bold flex items-center gap-1.5">
+              <i class="fa-solid fa-list-check text-purple-400"></i> Active Agent Missions (정기투자·루틴)
+            </strong>
+            <span class="text-[9.5px] text-cyan-300 bg-indigo-950 px-2 py-0.5 rounded-full border border-indigo-800" id="missionCountBadge">2건 활성</span>
+          </div>
+          <div id="agentMissionContainer" class="space-y-1.5 text-xs text-slate-300">
+            <!-- Dynamic missions -->
+          </div>
+        </div>
+
+        <!-- Risk Guard Limits -->
+        <div class="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 text-xs space-y-2">
+          <strong class="text-xs text-amber-400 font-bold block mb-1">
+            <i class="fa-solid fa-shield-halved"></i> Active Risk Guard (위험 통제 파라미터)
+          </strong>
+          <div class="flex justify-between text-slate-300">
+            <span>1회 최대 투자한도</span>
+            <strong class="text-white">1,000,000원</strong>
+          </div>
+          <div class="flex justify-between text-slate-300">
+            <span>1일 최대 자동주문</span>
+            <strong class="text-white">2,000,000원 (오늘 실행: 0원)</strong>
+          </div>
+          <div class="flex justify-between text-slate-300">
+            <span>1일 최대 실행 횟수</span>
+            <strong class="text-white">최대 2회</strong>
+          </div>
+        </div>
+
+        <!-- Emergency Stop Button -->
+        <button onclick="triggerEmergencyStop()" class="w-full py-2.5 rounded-xl bg-red-600/90 hover:bg-red-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md">
+          <i class="fa-solid fa-hand"></i> NAVI 자동주문 전체 긴급 중지 (Emergency Stop)
+        </button>
+
+        <!-- AGENT ACTIVITY TIMELINE (BACKGROUND LOG) -->
+        <div class="bg-slate-950 rounded-2xl border border-slate-800 p-3 space-y-2">
+          <div class="flex justify-between items-center mb-1">
+            <strong class="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-timeline"></i> Agent Activity Timeline (상시 활동 로그)
+            </strong>
+            <span class="text-[9.5px] text-slate-400 font-mono">Realtime Background</span>
+          </div>
+          <div id="agentActivityTimelineContainer" class="space-y-2 text-xs">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Native Bottom Navigation Bar -->
+    <nav class="h-16 bg-white border-t border-slate-200 grid grid-cols-5 text-center text-[10px] text-slate-500 font-bold select-none absolute bottom-0 left-0 right-0 z-40">
+      <button onclick="switchScreen('home')" id="bottomNav-home" class="flex flex-col items-center justify-center text-blue-600">
+        <i class="fa-solid fa-house text-base mb-0.5"></i> 홈
+      </button>
+      <button onclick="switchScreen('chart')" id="bottomNav-chart" class="flex flex-col items-center justify-center hover:text-blue-600">
+        <i class="fa-solid fa-chart-line text-base mb-0.5"></i> 차트
+      </button>
+      <button onclick="switchScreen('chat')" id="bottomNav-chat" class="flex flex-col items-center justify-center hover:text-blue-600">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 text-white flex items-center justify-center -mt-2 shadow-md">
+          <i class="fa-solid fa-robot text-sm"></i>
+        </div>
+        <span class="text-blue-600 font-extrabold mt-0.5">NAVI챗</span>
+      </button>
+      <button onclick="switchScreen('balance')" id="bottomNav-balance" class="flex flex-col items-center justify-center hover:text-blue-600">
+        <i class="fa-solid fa-wallet text-base mb-0.5"></i> 잔고
+      </button>
+      <button onclick="switchScreen('auto')" id="bottomNav-auto" class="flex flex-col items-center justify-center hover:text-blue-600">
+        <i class="fa-solid fa-microchip text-base mb-0.5"></i> 오토·미션
+      </button>
+    </nav>
+
+    <!-- 1. AMOUNT-BASED BUY BOTTOM SHEET -->
+    <div id="amountOrderSheet" class="app-sheet">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto my-2.5 cursor-pointer" onclick="closeSheet('amountOrderSheet')"></div>
+      <div class="p-4 pt-1 space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <div>
+            <h4 class="text-sm font-bold text-slate-900" id="buySheetStockName">DB하이텍 (000990)</h4>
+            <span class="text-xs text-red-500 font-mono font-bold" id="buySheetPrice">131,700원</span>
+          </div>
+          <button onclick="closeSheet('amountOrderSheet')" class="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-[11px] text-slate-500 block">투자 희망 금액 입력 (최대 정수 주수 자동 절사)</label>
+          <input type="number" id="buyAmountInput" value="1000000" step="100000" oninput="calculateBuyAmountShares()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold focus:outline-none focus:border-blue-600">
+
+          <!-- Quick Preset Chips -->
+          <div class="grid grid-cols-5 gap-1.5 text-[10.5px]">
+            <button onclick="setBuyPreset(100000)" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold">10만</button>
+            <button onclick="setBuyPreset(300000)" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold">30만</button>
+            <button onclick="setBuyPreset(500000)" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold">50만</button>
+            <button onclick="setBuyPreset(1000000)" class="py-1.5 rounded-lg bg-blue-100 text-blue-700 font-bold">100만</button>
+            <button onclick="setBuyPreset(3000000)" class="py-1.5 rounded-lg bg-slate-100 text-slate-700 font-bold">300만</button>
+          </div>
+
+          <!-- Real-Time Calculation Card -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
+            <div class="flex justify-between">
+              <span class="text-slate-600">자동 계산 정수 수량</span>
+              <strong id="buyCalcShares" class="text-blue-600 font-mono font-bold text-sm">7주</strong>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-600">예상 체결 금액</span>
+              <strong id="buyCalcEstTotal" class="text-slate-900 font-mono font-bold">921,900원</strong>
+            </div>
+            <div class="flex justify-between text-slate-400 text-[10.5px]">
+              <span>잔여 보존 예수금</span>
+              <span id="buyCalcRemainder" class="font-mono">78,100원</span>
+            </div>
+            <div class="text-[10px] text-slate-500 pt-1 border-t border-slate-200 flex justify-between">
+              <span>내 보유 예수금</span>
+              <span id="buySheetMyCash" class="font-bold">1,500,000원</span>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="executeSimulatedBuy()" id="btnExecuteBuy" class="w-full py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow-md">
+          ⚡ 7주 시장가 모의 매수 주문 실행
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. SELL BOTTOM SHEET -->
+    <div id="sellOrderSheet" class="app-sheet">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto my-2.5 cursor-pointer" onclick="closeSheet('sellOrderSheet')"></div>
+      <div class="p-4 pt-1 space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <div>
+            <h4 class="text-sm font-bold text-slate-900" id="sellSheetStockName">DB하이텍 매도</h4>
+            <span class="text-xs text-blue-600 font-bold" id="sellSheetHoldQty">보유 14주</span>
+          </div>
+          <button onclick="closeSheet('sellOrderSheet')" class="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+        </div>
+
+        <div class="grid grid-cols-4 gap-1.5 text-xs font-bold">
+          <button onclick="setSellRatio(0.25)" class="py-2 rounded-lg bg-slate-100 text-slate-700">25%</button>
+          <button onclick="setSellRatio(0.50)" class="py-2 rounded-lg bg-blue-100 text-blue-700">50%</button>
+          <button onclick="setSellRatio(1.00)" class="py-2 rounded-lg bg-slate-100 text-slate-700">전량</button>
+          <button onclick="customSellPrompt()" class="py-2 rounded-lg bg-slate-100 text-slate-700">직접입력</button>
+        </div>
+
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+          <div class="flex justify-between">
+            <span>매도 실행 수량</span>
+            <strong id="sellCalcShares" class="text-blue-600 font-bold">7주</strong>
+          </div>
+          <div class="flex justify-between">
+            <span>예상 입금 금액</span>
+            <strong id="sellCalcTotal" class="text-slate-900 font-bold">921,900원</strong>
+          </div>
+        </div>
+
+        <button onclick="executeSimulatedSell()" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold">
+          📉 시장가 매도 실행 (Simulation)
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. WHAT-IF SIMULATOR SHEET -->
+    <div id="whatIfSheet" class="app-sheet">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto my-2.5 cursor-pointer" onclick="closeSheet('whatIfSheet')"></div>
+      <div class="p-4 pt-1 space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <h4 class="text-sm font-bold text-slate-900">🔮 Portfolio Digital Twin WHAT-IF</h4>
+          <button onclick="closeSheet('whatIfSheet')" class="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <div>
+            <label class="text-[11px] text-slate-500 block mb-1">추가 매수 검토 종목</label>
+            <select id="whatIfStockSelect" onchange="runWhatIfCalculation()" class="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-bold">
+              <option value="DB하이텍">DB하이텍 (현재 14주 보유)</option>
+              <option value="KODEX 미국S&P500">KODEX 미국S&P500 (지수 분산 대안)</option>
+              <option value="삼성전자">삼성전자 (대형 IT)</option>
+              <option value="TIGER 미국배당다우존스">TIGER 미국배당다우존스 (배당 분산)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[11px] text-slate-500 block mb-1">추가 투자 예정 금액</label>
+            <div class="grid grid-cols-4 gap-1 text-[11px] mb-1">
+              <button onclick="setWhatIfAmtPreset(1000000)" class="py-1 rounded bg-slate-100">100만</button>
+              <button onclick="setWhatIfAmtPreset(3000000)" class="py-1 rounded bg-slate-100">300만</button>
+              <button onclick="setWhatIfAmtPreset(5000000)" class="py-1 rounded bg-blue-100 text-blue-700 font-bold">500만</button>
+              <button onclick="setWhatIfAmtPreset(10000000)" class="py-1 rounded bg-slate-100">1,000만</button>
+            </div>
+            <input type="number" id="whatIfAmtInput" value="5000000" step="1000000" oninput="runWhatIfCalculation()" class="w-full p-2 rounded-xl border border-slate-300 text-xs font-mono font-bold">
+          </div>
+
+          <!-- Dynamic Before/After Card -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div class="flex justify-between">
+              <span>해당 종목 비중 변화</span>
+              <span id="whatIfWeightChange" class="font-bold text-red-600 font-mono">57.5% ➔ 83.4% (위험)</span>
+            </div>
+            <div class="flex justify-between">
+              <span>IT·반도체 섹터 집중도</span>
+              <span id="whatIfSectorChange" class="font-bold text-red-600 font-mono">68.4% ➔ 91.2%</span>
+            </div>
+            <div class="flex justify-between">
+              <span>예상 X-Ray 안정도 점수</span>
+              <span id="whatIfXrayScoreChange" class="font-bold text-red-600 font-mono">68점 ➔ 52점 (하락)</span>
+            </div>
+            <div id="whatIfAdviceText" class="p-2.5 bg-red-100 rounded-lg text-[10.5px] text-red-800 leading-snug">
+              ⚠️ 특정 섹터 편중이 심화됩니다. KODEX 미국S&amp;P500 등 지수 분산을 권고합니다.
+            </div>
+          </div>
+        </div>
+
+        <button onclick="applyWhatIfToOrder()" class="w-full py-3 rounded-xl bg-blue-600 text-white text-xs font-bold">
+          이 조건으로 주문서 열기
+        </button>
+      </div>
+    </div>
+
+    <!-- 4. 5-STEP REBALANCING STEPPER SHEET -->
+    <div id="rebalanceSheet" class="app-sheet">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto my-2.5 cursor-pointer" onclick="closeSheet('rebalanceSheet')"></div>
+      <div class="p-4 pt-1 space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <h4 class="text-sm font-bold text-slate-900">5단계 포트폴리오 리밸런싱</h4>
+          <button onclick="closeSheet('rebalanceSheet')" class="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+        </div>
+
+        <!-- 5-Step Indicators -->
+        <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 border-b border-slate-100 pb-2">
+          <span id="rebStep-1" class="px-2 py-0.5 rounded-full bg-blue-600 text-white">1.제안</span>
+          <span id="rebStep-2" class="px-2 py-0.5 rounded-full">2.전</span>
+          <span id="rebStep-3" class="px-2 py-0.5 rounded-full">3.후</span>
+          <span id="rebStep-4" class="px-2 py-0.5 rounded-full">4.주문</span>
+          <span id="rebStep-5" class="px-2 py-0.5 rounded-full">5.승인</span>
+        </div>
+
+        <!-- Dynamic Step Content -->
+        <div id="rebalanceStepBody" class="text-xs space-y-2.5 min-h-[140px]">
+          <!-- Step details inserted by JS -->
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="prevRebalanceStep()" id="btnRebPrev" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hidden">이전</button>
+          <button onclick="nextRebalanceStep()" id="btnRebNext" class="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold">다음 단계</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. AWAY / TRAVEL MODE SHEET -->
+    <div id="awayModeSheet" class="app-sheet">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto my-2.5 cursor-pointer" onclick="closeSheet('awayModeSheet')"></div>
+      <div class="p-4 pt-1 space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <h4 class="text-sm font-bold text-indigo-950 flex items-center gap-1.5">
+            <i class="fa-solid fa-plane-departure text-indigo-600"></i> NAVI Away Guard (부재·여행 모드)
+          </h4>
+          <button onclick="closeSheet('awayModeSheet')" class="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+        </div>
+
+        <p class="text-xs text-slate-600 leading-relaxed">
+          "출장, 휴가, 병원 등 <strong>MTS를 보기 어려운 환경</strong>을 감지해, 급락 시 사전 원칙에 따라 <strong>매도 주문 초안(Draft)</strong>을 조립하고 최종 승인만 받습니다."
+        </p>
+
+        <!-- Current Status Pill -->
+        <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs space-y-2 text-indigo-950">
+          <div class="flex justify-between items-center">
+            <span>감시 상태</span>
+            <strong id="travelModeStatusLabel" class="text-indigo-700 font-bold flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 대기 중 (국내 체류)
+            </strong>
+          </div>
+          <div class="flex justify-between">
+            <span>사전 대응 룰</span>
+            <strong>보유주 -5% 이탈 시 50% 분할 매도 초안 생성</strong>
+          </div>
+          <div class="flex justify-between">
+            <span>비일임 원칙</span>
+            <span class="text-slate-500">임의 체결 없음 · 고객 1-Tap 승인 필수</span>
+          </div>
+        </div>
+
+        <!-- 3 Interactive Simulation Triggers -->
+        <div class="space-y-1.5 text-xs">
+          <div class="text-[10px] font-bold text-slate-400 px-0.5">🚀 시나리오 시뮬레이션 체험</div>
+          <button onclick="simulateTravelDeparture()" class="w-full text-left p-2.5 rounded-xl bg-purple-50 border border-purple-200 hover:bg-purple-100 transition">
+            <strong class="text-purple-900 block">① [출국 감지 시뮬레이션]</strong>
+            <span class="text-purple-700 text-[10.5px]">도쿄 출장 감지 ➔ Away Guard 모드로 전환</span>
+          </button>
+          <button onclick="simulateTravelShockAndDraft()" class="w-full text-left p-2.5 rounded-xl bg-red-50 border border-red-200 hover:bg-red-100 transition">
+            <strong class="text-red-900 block">② [여행 중 급락장 발생 시뮬레이션]</strong>
+            <span class="text-red-700 text-[10.5px]">나스닥 급락 ➔ DB하이텍 매도 주문 '초안' 준비 푸시</span>
+          </button>
+          <button onclick="simulateTravelReturn()" class="w-full text-left p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition">
+            <strong class="text-emerald-900 block">③ [귀국 감지 시뮬레이션]</strong>
+            <span class="text-emerald-700 text-[10.5px]">인천공항 복귀 감지 ➔ 부재 중 NAVI 활동 요약 브리핑</span>
+          </button>
+        </div>
+
+        <button onclick="showToast('✅ 부재 중 감시 가드가 활성화되었습니다.'); closeSheet('awayModeSheet');" class="w-full py-3 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-md">
+          부재 중 감시 룰 적용 완료
+        </button>
+      </div>
+    </div>
+
+    <!-- 6. ALERT BUILDER SHEET -->
+    <div id="alertBuilderSheet" class="app-sheet">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto my-2.5 cursor-pointer" onclick="closeSheet('alertBuilderSheet')"></div>
+      <div class="p-4 pt-1 space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <h4 class="text-sm font-bold text-slate-900">🔔 기술적 분석 Alert Builder</h4>
+          <button onclick="closeSheet('alertBuilderSheet')" class="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <div class="flex justify-between">
+            <span>설정 대상 종목</span>
+            <strong id="alertStockName" class="text-slate-900 font-bold">DB하이텍</strong>
+          </div>
+
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <label class="flex items-center gap-2 font-bold text-slate-800">
+              <input type="checkbox" id="chkAlertMA" checked class="accent-blue-600"> 20일 이동평균선 지지 반등
+            </label>
+            <label class="flex items-center gap-2 font-bold text-slate-800">
+              <input type="checkbox" id="chkAlertVol" checked class="accent-blue-600"> 거래량 +200% 이상 폭증
+            </label>
+            <label class="flex items-center gap-2 font-bold text-slate-800">
+              <input type="checkbox" id="chkAlertRsi" class="accent-blue-600"> RSI 30 침체 탈출
+            </label>
+          </div>
+        </div>
+
+        <button onclick="saveCustomAlertRule()" class="w-full py-3 rounded-xl bg-blue-600 text-white text-xs font-bold">
+          🔔 알림 규칙 저장 및 감시 시작
+        </button>
+      </div>
+    </div>
+
+    <!-- 7. AGENT BRAIN MODAL -->
+    <div id="agentBrainModal" class="app-modal">
+      <div class="w-full max-w-[360px] bg-white rounded-2xl p-4 space-y-3 shadow-2xl max-h-[85vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <h4 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-brain text-purple-600"></i> NAVI Agent Brain (투자자 기억 모델)
+          </h4>
+          <button onclick="closeAgentBrainModal()" class="text-slate-400 hover:text-slate-700 text-xs">✕</button>
+        </div>
+        
+        <p class="text-xs text-slate-600 leading-relaxed">
+          고객님이 다른 증권사로 이동할 수 없는 이유: <strong>NAVI가 수년간 학습한 나만의 투자 사고회로와 징크스</strong>가 탑재되어 있습니다.
+        </p>
+
+        <!-- Brain Attributes -->
+        <div class="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs space-y-2 text-purple-950">
+          <div class="flex justify-between">
+            <span class="text-slate-500">투자자 페르소나</span>
+            <strong>안정 성장형 · ETF 중심 분산 선호</strong>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">단일 섹터 한도</span>
+            <strong class="text-red-600">60% 초과 시 즉시 경고</strong>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">심리 징크스 방어</span>
+            <strong>"추격 매수(불타기) 시 승률 28%" 기억 ➔ 경고 개입</strong>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">부재 시 안전 원칙</span>
+            <strong>-5% 이탈 시 무조건 50% 분할 매도 초안 마련</strong>
+          </div>
+        </div>
+
+        <button onclick="closeAgentBrainModal()" class="w-full py-2.5 rounded-xl bg-purple-600 text-white text-xs font-bold">
+          확인 완료
+        </button>
+      </div>
+    </div>
+
+    <!-- 8. PB HANDOFF MODAL -->
+    <div id="pbModal" class="app-modal">
+      <div class="w-full max-w-[360px] bg-white rounded-2xl p-4 space-y-3 shadow-2xl">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <h4 class="text-sm font-bold text-purple-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-user-tie text-purple-600"></i> PB 이어보기 (Handoff)
+          </h4>
+          <button onclick="closePbModal()" class="text-slate-400 hover:text-slate-700 text-xs">✕</button>
+        </div>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          고객님이 처음부터 설명하실 필요 없이, <strong>NAVI의 분석 데이터(IT 편중 68.4%, 질문 히스토리)</strong>를 담당 PB에게 그대로 인계합니다.
+        </p>
+        <button onclick="confirmPbHandoff()" class="w-full py-3 rounded-xl bg-purple-600 text-white text-xs font-bold">
+          전담 PB에게 리포트 전송 및 상담 예약
+        </button>
+      </div>
+    </div>
+
+    <!-- 9. MARKET SHOCK SHEET -->
+    <div id="marketShockSheet" class="app-sheet">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto my-2.5 cursor-pointer" onclick="closeSheet('marketShockSheet')"></div>
+      <div class="p-4 pt-1 space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <h4 class="text-sm font-bold text-red-900">⚡ Market Shock 민감도 테스트</h4>
+          <button onclick="closeSheet('marketShockSheet')" class="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+        </div>
+        <div class="space-y-3 text-xs">
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span>나스닥 지수 급변</span>
+              <span id="shockValDisplay" class="font-bold text-red-600 font-mono">-8%</span>
+            </div>
+            <input type="range" min="-15" max="5" value="-8" step="1" oninput="calculateMarketShock(this.value)" class="w-full accent-red-600 cursor-pointer">
+          </div>
+          <div class="p-3 bg-red-50 rounded-xl border border-red-200 space-y-1 text-xs text-red-900">
+            <div class="flex justify-between">
+              <span>내 계좌 예상 손실액</span>
+              <strong id="shockEstLossAmount" class="font-mono text-red-600 font-bold">-184,200원 (-5.75%)</strong>
+            </div>
+          </div>
+        </div>
+        <button onclick="closeSheet('marketShockSheet'); openRebalanceSheet();" class="w-full py-3 rounded-xl bg-blue-600 text-white text-xs font-bold">
+          충격 완화용 리밸런싱 실행
+        </button>
+      </div>
+    </div>
+
+    <!-- 10. DIVIDEND SALARY PLANNER SHEET (제2의 월급 50만원 설계기) -->
+    <div id="dividendSalarySheet" class="app-sheet">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto my-2.5 cursor-pointer" onclick="closeSheet('dividendSalarySheet')"></div>
+      <div class="p-4 pt-1 space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <h4 class="text-sm font-bold text-emerald-950 flex items-center gap-1.5">
+            <i class="fa-solid fa-hand-holding-dollar text-emerald-600"></i> 제2의 월급 배당 설계기 (Dividend Salary)
+          </h4>
+          <button onclick="closeSheet('dividendSalarySheet')" class="text-slate-400 hover:text-slate-700 text-sm">✕</button>
+        </div>
+
+        <p class="text-xs text-slate-600 leading-relaxed">
+          "원금 손실 걱정을 줄이고, <strong>매달 15일 따박따박 통장에 꽂히는 월 50만 원 제2의 월급</strong>을 AI가 포트폴리오에 맞춰 자동으로 조립합니다."
+        </p>
+
+        <!-- Current vs Target Card -->
+        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs space-y-2 text-emerald-950">
+          <div class="flex justify-between">
+            <span>현재 월평균 배당금</span>
+            <strong class="text-slate-700">약 42,000원 / 월</strong>
+          </div>
+          <div class="flex justify-between items-baseline">
+            <span>목표 희망 월배당</span>
+            <strong class="text-emerald-700 font-black text-sm">500,000원 / 월 (연 600만원)</strong>
+          </div>
+          <div class="w-full bg-emerald-200 h-2 rounded-full overflow-hidden">
+            <div class="bg-emerald-600 h-full" style="width: 8.4%;"></div>
+          </div>
+        </div>
+
+        <!-- AI Optimized 3-Step Dividend Matrix -->
+        <div class="space-y-1.5 text-xs">
+          <strong class="text-xs text-slate-900 block font-bold">💡 NAVI가 빈 달(1, 4, 7, 10월)을 채우는 최적 ETF</strong>
+          <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+            <div class="flex justify-between font-bold text-slate-800">
+              <span>TIGER 미국배당다우존스 (월배당)</span>
+              <span class="text-emerald-600">연 3.8% 분배율</span>
+            </div>
+            <span class="text-[10px] text-slate-500 block">매달 15일 정기 입금 · 원금 안정성 S등급</span>
+          </div>
+          <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+            <div class="flex justify-between font-bold text-slate-800">
+              <span>ACE 미국30년국채액티브(H) (월배당)</span>
+              <span class="text-emerald-600">연 4.2% 분배율</span>
+            </div>
+            <span class="text-[10px] text-slate-500 block">금리 인하기 시세 차익 + 안정적 이자 수익</span>
+          </div>
+        </div>
+
+        <button onclick="executeDividendPackageDraft()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md">
+          ⚡ 월 50만 원 배당 포트폴리오 1-Tap 주문 초안 조립
+        </button>
+      </div>
+    </div>
+
+    <!-- 11. BLACK SWAN NIGHT DEFENSE MODAL (새벽 해외 폭락 방어막) -->
+    <div id="blackSwanModal" class="app-modal">
+      <div class="w-full max-w-[370px] bg-slate-950 text-white rounded-3xl p-4.5 space-y-3.5 border border-cyan-400 shadow-2xl">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-cyan-400 animate-ping"></span>
+            <strong class="text-sm text-cyan-300 font-bold">NAVI 새벽 블랙스완 방어막</strong>
+          </div>
+          <button onclick="closeBlackSwanModal()" class="text-slate-400 hover:text-white text-xs">✕</button>
+        </div>
+
+        <p class="text-xs text-slate-300 leading-relaxed">
+          "고객님이 잠드신 새벽 03:20, <strong>미국 나스닥 지수가 -4.3% 급락</strong>했습니다. NAVI는 고객님의 수면을 방해하지 않고 <strong>아침 09:00 장 시작 시 안전하게 지켜낼 방어막</strong>을 미리 세워두었습니다."
+        </p>
+
+        <!-- Threat Breakdown -->
+        <div class="p-3 bg-red-950/80 border border-red-500/40 rounded-xl text-xs space-y-1.5 text-red-200">
+          <div class="flex justify-between">
+            <span>미국 반도체 지수(SOX) 충격</span>
+            <strong class="text-red-400 font-mono">-5.8% 폭락</strong>
+          </div>
+          <div class="flex justify-between">
+            <span>내 계좌(IT 68.4%) 예상 갭하락</span>
+            <strong class="text-red-400 font-mono">-134,000원 (-4.18%)</strong>
+          </div>
+        </div>
+
+        <!-- Defense Draft Plan -->
+        <div class="p-3 bg-slate-900 border border-cyan-500/40 rounded-xl text-xs space-y-1.5 text-slate-300">
+          <strong class="text-cyan-300 block font-bold">🛡️ NAVI가 준비해 둔 시초가 대응책 (Draft):</strong>
+          <div>1. 장 시작 직후 지지선 이탈 시 <strong>DB하이텍 5주 분할 매도 대기</strong></div>
+          <div>2. 달러 환율 급등에 따른 <strong>달러자산 10% 자동 익절 방어</strong></div>
+          <div class="text-[10px] text-slate-400 pt-1">※ 임의 체결되지 않으며, 아침 8시 40분에 1-Tap 승인 요청 푸시를 드립니다.</div>
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="confirmBlackSwanShield()" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-slate-950 text-xs font-black">
+            🛡️ 새벽 방어막 자동 대기 승인
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 12. MENTAL PACEMAKER / ANTI-PANIC COOL-DOWN MODAL -->
+    <div id="mentalPacemakerModal" class="app-modal">
+      <div class="w-full max-w-[360px] bg-white rounded-3xl p-5 text-center space-y-3 shadow-2xl">
+        <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto text-xl animate-pulse">
+          <i class="fa-solid fa-heart-pulse"></i>
+        </div>
+        <h4 class="text-base font-extrabold text-slate-900">잠깐만요! 30초 쉼표 (Anti-Panic)</h4>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          고객님의 최근 3분간 주문 시도가 급격히 빨라졌습니다.<br>
+          <strong>과거 급등주 추격 매수 시 72% 확률로 고점 물림</strong>이 발생했습니다. 천천히 숨을 들이마시고 가격선을 다시 확인해 보세요.
+        </p>
+        <!-- Breathing Visual Box -->
+        <div class="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+          <div id="breatheCircle" class="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center mx-auto text-xs font-bold transition-all duration-1000 scale-100">
+            숨 들이쉬기
+          </div>
+          <span class="text-[10px] text-blue-800 font-mono mt-2 block" id="cooldownTimer">남은 안심 시간: 10초</span>
+        </div>
+        <button onclick="dismissMentalPacemaker()" id="btnDismissPacemaker" class="w-full py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-not-allowed opacity-50" disabled>
+          차분하게 주문서 열기 (10초 대기)
+        </button>
+      </div>
+    </div>
+
+    <!-- Voice Audio Playing Toast Pill -->
+    <div id="voiceBriefingToast" class="hidden absolute bottom-20 left-4 right-4 z-50 bg-slate-950/95 backdrop-blur-md text-white p-3 rounded-2xl border border-cyan-400 shadow-2xl flex items-center justify-between">
+      <div class="flex items-center gap-2.5 truncate">
+        <div class="flex items-center gap-1 shrink-0">
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+          <span class="voice-bar"></span>
+        </div>
+        <div class="truncate">
+          <span class="text-[10px] text-cyan-300 font-bold block" id="voiceToastTitle">NAVI 어르신 음성 말벗 비서</span>
+          <span class="text-xs text-white truncate block" id="voiceToastText">소리로 브리핑 중입니다...</span>
+        </div>
+      </div>
+      <button onclick="stopNaviSpeech()" class="px-2.5 py-1 rounded-lg bg-red-600 text-white text-[10px] font-bold shrink-0 ml-2">
+        멈춤
+      </button>
+    </div>
+
+  </div>
+
+  <!-- JAVASCRIPT APPLICATION CORE -->
+  <script>
+    const STOCKS_DATA = {
+      'DB하이텍': {
+        code: '000990', type: '국내주식', category: 'domestic', currency: '원',
+        price: 131700, change: '+4.44%', rsi: 61.4, score: 76, stage: 'Stage 2', sector: 'IT/반도체',
+        ohlc: [
+          { o: 118000, h: 123000, l: 116000, c: 122000, v: 45 },
+          { o: 122000, h: 125000, l: 120000, c: 121000, v: 38 },
+          { o: 121000, h: 128500, l: 120500, c: 127000, v: 80 },
+          { o: 127000, h: 131000, l: 125500, c: 129500, v: 110 },
+          { o: 129500, h: 133500, l: 128000, c: 131700, v: 140 }
+        ]
+      },
+      '삼성전자': {
+        code: '005930', type: '국내주식', category: 'domestic', currency: '원',
+        price: 273500, change: '+4.79%', rsi: 34.2, score: 68, stage: 'Stage 1', sector: 'IT/반도체',
+        ohlc: [
+          { o: 265000, h: 268000, l: 262000, c: 264000, v: 60 },
+          { o: 264000, h: 266000, l: 260000, c: 261000, v: 50 },
+          { o: 261000, h: 267000, l: 260500, c: 266000, v: 75 },
+          { o: 266000, h: 271000, l: 265000, c: 270000, v: 95 },
+          { o: 270000, h: 275000, l: 269000, c: 273500, v: 120 }
+        ]
+      },
+      '티에스이': {
+        code: '131290', type: '국내주식', category: 'domestic', currency: '원',
+        price: 266500, change: '+9.67%', rsi: 78.1, score: 58, stage: 'Stage 2', sector: 'IT/반도체',
+        ohlc: [
+          { o: 235000, h: 242000, l: 232000, c: 240000, v: 80 },
+          { o: 240000, h: 248000, l: 238000, c: 246000, v: 95 },
+          { o: 246000, h: 255000, l: 244000, c: 252000, v: 120 },
+          { o: 252000, h: 262000, l: 250000, c: 258000, v: 150 },
+          { o: 258000, h: 269000, l: 256000, c: 266500, v: 180 }
+        ]
+      },
+      '로보티즈': {
+        code: '108490', type: '국내주식', category: 'domestic', currency: '원',
+        price: 306000, change: '-0.16%', rsi: 51.5, score: 74, stage: 'Stage 2', sector: '로봇/제조',
+        ohlc: [
+          { o: 298000, h: 305000, l: 295000, c: 302000, v: 50 },
+          { o: 302000, h: 308000, l: 300000, c: 305000, v: 55 },
+          { o: 305000, h: 312000, l: 303000, c: 310000, v: 70 },
+          { o: 310000, h: 311000, l: 304000, c: 307000, v: 60 },
+          { o: 307000, h: 309000, l: 303000, c: 306000, v: 65 }
+        ]
+      },
+      'KODEX 미국S&P500': {
+        code: '379800', type: '국내상장ETF', category: 'domestic', currency: '원',
+        price: 23955, change: '+0.29%', rsi: 56.2, score: 86, stage: 'Stage 2', sector: '글로벌지수',
+        ohlc: [
+          { o: 23600, h: 23800, l: 23550, c: 23720, v: 70 },
+          { o: 23720, h: 23850, l: 23680, c: 23800, v: 65 },
+          { o: 23800, h: 23920, l: 23750, c: 23880, v: 75 },
+          { o: 23880, h: 23960, l: 23820, c: 23910, v: 80 },
+          { o: 23910, h: 23990, l: 23890, c: 23955, v: 90 }
+        ]
+      },
+      'NVDA': {
+        code: 'NASDAQ', type: '해외주식', category: 'overseas', currency: '$',
+        price: 222.27, change: '+2.22%', rsi: 63.4, score: 83, stage: 'Stage 2', sector: '빅테크/AI',
+        ohlc: [
+          { o: 212, h: 216, l: 210, c: 215, v: 85 },
+          { o: 215, h: 218, l: 213, c: 217, v: 90 },
+          { o: 217, h: 221, l: 215, c: 219, v: 110 },
+          { o: 219, h: 224, l: 218, c: 221, v: 130 },
+          { o: 221, h: 225, l: 220, c: 222.27, v: 145 }
+        ]
+      },
+      'TIGER 미국배당다우존스': {
+        code: '458730', type: '연금ETF', category: 'pension', currency: '원',
+        price: 14815, change: '+0.44%', rsi: 54.0, score: 88, stage: 'Stage 2', sector: '배당자산',
+        ohlc: [
+          { o: 14650, h: 14750, l: 14600, c: 14700, v: 50 },
+          { o: 14700, h: 14780, l: 14680, c: 14730, v: 55 },
+          { o: 14730, h: 14800, l: 14710, c: 14770, v: 60 },
+          { o: 14770, h: 14820, l: 14750, c: 14790, v: 65 },
+          { o: 14790, h: 14850, l: 14780, c: 14815, v: 70 }
+        ]
+      }
+    };
+
+    let userPortfolio = {
+      cash: 1500000,
+      holdings: {
+        'DB하이텍': { qty: 14, avgPrice: 123200, sector: 'IT/반도체' },
+        '삼성전자': { qty: 5, avgPrice: 285000, sector: 'IT/반도체' }
+      }
+    };
+
+    let agentBrain = {
+      persona: "NAVI Always-On Agent",
+      focusStock: "DB하이텍",
+      travelMode: false,
+      travelDestination: null,
+      preferences: {
+        etfPriority: true,
+        maxSectorLimit: 60,
+        antiChasingBias: true,
+        draftApprovalOnly: true
+      },
+      missions: [
+        { id: 1, title: 'KODEX 미국S&P500 매일 3주 정기투자', type: '정기투자', status: 'ACTIVE', note: '매 영업일 3주 (일 약 71,865원)' },
+        { id: 2, title: 'DB하이텍 20일선 지지 실시간 감시', type: 'Alert Guard', status: 'ACTIVE', note: '126,000원선 터치 시 푸시 및 초안 준비' }
+      ],
+      timeline: [
+        { time: '14:28:10', type: 'NAVI Engine', desc: 'DB하이텍 거래량 급증 +238% 실시간 감지', tag: '신호 감지' },
+        { time: '13:50:00', type: 'Portfolio Twin', desc: 'IT·반도체 비중 68.4% 점검 완료 (경고 상태 유지)', tag: '편중 감시' },
+        { time: '10:00:15', type: 'Agent Mission', desc: 'KODEX 미국S&P500 3주 정기 체결 대기 완료', tag: '정기 미션' }
+      ]
+    };
+
+    let appState = {
+      currentStock: 'DB하이텍',
+      activeCategory: 'domestic',
+      indicators: { ma: true, bb: true, rsi: false, volume: true, macd: false, supply: false },
+      seniorMode: false,
+      rebalanceStep: 1,
+      autoEnabled: false,
+      selectedOrderAmount: 1000000
+    };
+
+    // TTS SpeechSynthesis Web Voice Agent
+    function speakNavi(text, title = 'NAVI 음성 말벗') {
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel(); // Stop prior
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.lang = 'ko-KR';
+          utter.rate = appState.seniorMode ? 0.88 : 0.98; // Slower and clearer for seniors
+          utter.pitch = 1.0;
+
+          const toast = document.getElementById('voiceBriefingToast');
+          const titleEl = document.getElementById('voiceToastTitle');
+          const textEl = document.getElementById('voiceToastText');
+          if (toast && titleEl && textEl) {
+            titleEl.innerText = title;
+            textEl.innerText = text;
+            toast.classList.remove('hidden');
+          }
+
+          utter.onend = () => {
+            if (toast) toast.classList.add('hidden');
+          };
+          utter.onerror = () => {
+            if (toast) toast.classList.add('hidden');
+          };
+
+          window.speechSynthesis.speak(utter);
+        } else {
+          showToast('🔊 이 브라우저는 음성 출력을 지원하지 않아 자막으로 표시합니다.');
+        }
+      } catch (e) {
+        console.log('TTS fallback:', e);
+      }
+    }
+
+    function stopNaviSpeech() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      const toast = document.getElementById('voiceBriefingToast');
+      if (toast) toast.classList.add('hidden');
+    }
+
+    function readAloudText(text) {
+      playSound('click');
+      speakNavi(text, 'NAVI 타점 읽어주기');
+    }
+
+    function playSeniorVoiceBriefing() {
+      playSound('success');
+      const speechText = "어르신, 반갑습니다. 오늘 어르신의 계좌는 총 470만 원이며, 12만 9천 원 수익 중입니다. 지금 DB하이텍에 사려는 사람이 많이 몰리고 있으니 천천히 살펴보세요. 제가 위험할 땐 아드님께 먼저 알려드릴 테니 안심하세요.";
+      speakNavi(speechText, '👵 어르신 맞춤 음성 브리핑');
+    }
+
+    let audioCtx = null;
+    function playSound(type = 'click') {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        if (type === 'click') {
+          osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.04);
+          gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.04);
+        } else {
+          osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.25);
+        }
+      } catch (e) {}
+    }
+
+    function showToast(msg) {
+      playSound('click');
+      const banner = document.getElementById('dynamicIsland');
+      const text = document.getElementById('islandText');
+      if (text && banner) {
+        text.innerText = msg;
+        banner.classList.add('bg-cyan-950', 'border-cyan-400');
+        setTimeout(() => {
+          text.innerText = agentBrain.travelMode ? 'NAVI AWAY GUARD' : 'NAVI ALWAYS-ON';
+          banner.classList.remove('bg-cyan-950', 'border-cyan-400');
+        }, 3000);
+      }
+    }
+
+    function switchScreen(screenKey) {
+      playSound('click');
+      closeAllSheets();
+
+      ['home', 'chart', 'chat', 'balance', 'auto'].forEach(key => {
+        const scr = document.getElementById(`screen-${key}`);
+        if (scr) scr.classList.add('hidden');
+        const nav = document.getElementById(`bottomNav-${key}`);
+        if (nav) {
+          nav.classList.remove('text-blue-600');
+          nav.classList.add('text-slate-500');
+        }
+      });
+
+      const targetScr = document.getElementById(`screen-${screenKey}`);
+      if (targetScr) targetScr.classList.remove('hidden');
+
+      const targetNav = document.getElementById(`bottomNav-${screenKey}`);
+      if (targetNav) {
+        targetNav.classList.add('text-blue-600');
+        targetNav.classList.remove('text-slate-500');
+      }
+
+      if (screenKey === 'chart') {
+        renderSvgCandleChart();
+        renderNaviPriceSetup(appState.currentStock);
+      } else if (screenKey === 'balance') {
+        renderBalanceScreen();
+      } else if (screenKey === 'auto') {
+        renderAgentMissions();
+        renderAgentTimeline();
+      }
+    }
+
+    function toggleSeniorMode() {
+      playSound('click');
+      appState.seniorMode = !appState.seniorMode;
+      document.body.classList.toggle('senior-mode', appState.seniorMode);
+
+      const btn = document.getElementById('seniorModeBtn');
+      const label = document.getElementById('seniorBtnLabel');
+      const translation = document.getElementById('seniorEasyTranslation');
+
+      if (appState.seniorMode) {
+        if (btn) btn.className = 'text-[10px] bg-amber-400 text-slate-950 font-black px-2.5 py-0.5 rounded-full border border-amber-300 flex items-center gap-1 shadow-md';
+        if (label) label.innerText = '✓ 큰글씨 적용중';
+        if (translation) translation.classList.remove('hidden');
+
+        // Welcome voice greeting for senior mode
+        speakNavi("어르신, 편안한 큰글씨 모드로 변경되었습니다. 어려운 글자 대신 제가 알기 쉽게 말씀드릴게요.", "어르신 모드 시작");
+        showToast('👓 어르신 안심 큰글씨 모드가 켜졌습니다.');
+      } else {
+        if (btn) btn.className = 'text-[10px] bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 px-2.5 py-0.5 rounded-full border border-amber-400 text-white font-extrabold flex items-center gap-1 shadow-sm';
+        if (label) label.innerText = '어르신 모드';
+        if (translation) translation.classList.add('hidden');
+        stopNaviSpeech();
+        showToast('일반 모드로 복귀했습니다.');
+      }
+    }
+
+    function openDividendSalarySheet() {
+      playSound('click');
+      closeAllSheets();
+      document.getElementById('dividendSalarySheet').classList.add('open');
+      speakNavi("매달 통장에 50만 원씩 들어오는 제2의 월급 설계기입니다. 부족한 달에 배당을 주는 안전한 미국 배당 ETF를 추천해 드려요.", "월급 배당 플래너");
+    }
+
+    function executeDividendPackageDraft() {
+      playSound('success');
+      closeSheet('dividendSalarySheet');
+      showToast('✅ [주문 초안] 월 50만원 배당 포트폴리오 패키지 주문서가 준비되었습니다.');
+      addAgentTimeline('월배당 패키지 조립', 'TIGER미국배당다우존스 + ACE미국30년국채 1-Tap 주문 초안 완성', '배당 설계');
+
+      setTimeout(() => {
+        switchScreen('chat');
+        triggerQuickChatPrompt('월배당 50만원 패키지 주문서 어떻게 되었어?');
+      }, 600);
+    }
+
+    function openBlackSwanDefenseModal() {
+      playSound('click');
+      closeAllSheets();
+      document.getElementById('blackSwanModal').classList.add('open');
+    }
+
+    function closeBlackSwanModal() {
+      playSound('click');
+      document.getElementById('blackSwanModal').classList.remove('open');
+    }
+
+    function confirmBlackSwanShield() {
+      playSound('success');
+      closeBlackSwanModal();
+      showToast('🛡️ NAVI 새벽 방어막이 활성화되었습니다. 안심하고 주무세요!');
+      addAgentTimeline('블랙스완 방어막 가동', '야간 나스닥 급락 대비 시초가 갭하락 방어 주문 초안 준비 완료', '새벽 가드');
+    }
+
+    function simulateFamilyNotification() {
+      playSound('success');
+      showToast('📱 [안심 전송] 보호자 김진우님께 "어르신 안전 투자 이상 무" 카톡이 발송되었습니다.');
+      addAgentTimeline('자녀 안심 가드', '보호자(장남 김진우)에게 포트폴리오 상태 및 안전 승인 알림 발송', '효도 가드');
+    }
+
+    function openMentalPacemaker() {
+      playSound('click');
+      const modal = document.getElementById('mentalPacemakerModal');
+      const btn = document.getElementById('btnDismissPacemaker');
+      const timerEl = document.getElementById('cooldownTimer');
+      const circle = document.getElementById('breatheCircle');
+      if (!modal) return;
+
+      modal.classList.add('open');
+      let remain = 5;
+
+      let interval = setInterval(() => {
+        remain--;
+        if (circle) circle.classList.toggle('scale-125');
+        if (timerEl) timerEl.innerText = `남은 안심 시간: ${remain}초`;
+
+        if (remain <= 0) {
+          clearInterval(interval);
+          if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('cursor-not-allowed', 'opacity-50');
+            btn.innerText = '마음 정리 완료 ➔ 주문화면 열기';
+          }
+        }
+      }, 1000);
+    }
+
+    function dismissMentalPacemaker() {
+      playSound('click');
+      const modal = document.getElementById('mentalPacemakerModal');
+      if (modal) modal.classList.remove('open');
+      openAmountOrderModal(appState.currentStock, 1000000);
+    }
+
+    function triggerVoiceInputSimulation() {
+      playSound('click');
+      const sampleQueries = [
+        "어르신용으로 오늘 내 계좌 알기 쉽게 설명해줘",
+        "매달 50만원씩 제2의 월급 배당 받으려면 어떻게 해?",
+        "DB하이텍 100만원만 더 사면 어떻게 돼?",
+        "KODEX 미국S&P500 매일 3주씩 투자 설정해줘"
+      ];
+      const selected = sampleQueries[Math.floor(Math.random() * sampleQueries.length)];
+      const input = document.getElementById('liveChatInput');
+      if (input) {
+        input.value = selected;
+        showToast('🎙️ 음성 인식 완료: "' + selected.slice(0, 18) + '..."');
+        setTimeout(() => sendLiveChat(), 500);
+      }
+    }
+
+    function toggleIndicator(ind) {
+      playSound('click');
+      appState.indicators[ind] = !appState.indicators[ind];
+      const btn = document.getElementById(`btn-ind-${ind}`);
+      if (btn) {
+        btn.className = appState.indicators[ind]
+          ? 'px-2.5 py-1 rounded bg-blue-600 text-white font-bold transition'
+          : 'px-2.5 py-1 rounded bg-slate-800 text-slate-400 font-bold transition';
+      }
+
+      if (ind === 'rsi') {
+        const p = document.getElementById('panel-rsi-indicator');
+        if (p) p.classList.toggle('hidden', !appState.indicators.rsi);
+      } else if (ind === 'macd') {
+        const p = document.getElementById('panel-macd-indicator');
+        if (p) p.classList.toggle('hidden', !appState.indicators.macd);
+      } else if (ind === 'supply') {
+        const p = document.getElementById('panel-supply-indicator');
+        if (p) p.classList.toggle('hidden', !appState.indicators.supply);
+      }
+
+      renderSvgCandleChart();
+      showToast(`📊 ${ind.toUpperCase()} 지표 ${appState.indicators[ind] ? '표시' : '숨김'}`);
+    }
+
+    function renderSvgCandleChart() {
+      const svg = document.getElementById('svgCandleCanvas');
+      if (!svg) return;
+      const stock = STOCKS_DATA[appState.currentStock] || STOCKS_DATA['DB하이텍'];
+      const rawOhlc = stock.ohlc || [];
+
+      const slider = document.getElementById('chartReplaySlider');
+      const step = slider ? parseInt(slider.value, 10) : 4;
+      const ohlc = rawOhlc.slice(0, Math.min(rawOhlc.length, Math.max(2, step + 1)));
+
+      if (ohlc.length === 0) return;
+
+      const candleW = Math.min(26, Math.max(16, Math.floor(280 / ohlc.length - 8)));
+
+      const positions = ohlc.map((c, i) => {
+        const x = 32 + i * (310 / Math.max(1, ohlc.length - 1));
+        const midPrice = (c.o + c.c + c.h + c.l) / 4;
+        const volatility = (c.h - c.l) * 0.85 + (midPrice * 0.016);
+        return {
+          x, c, midPrice,
+          upper: midPrice + volatility * 1.65,
+          lower: midPrice - volatility * 1.65
+        };
+      });
+
+      let minP = Infinity, maxP = -Infinity;
+      positions.forEach(pos => {
+        if (pos.c.l < minP) minP = pos.c.l;
+        if (pos.c.h > maxP) maxP = pos.c.h;
+        if (appState.indicators.bb) {
+          if (pos.lower < minP) minP = pos.lower;
+          if (pos.upper > maxP) maxP = pos.upper;
+        }
+      });
+
+      const pad = (maxP - minP) * 0.14 || (minP * 0.05);
+      const cMin = Math.max(0, minP - pad);
+      const cMax = maxP + pad;
+      const range = (cMax - cMin) || 1;
+
+      function getY(p) {
+        return 145 - ((p - cMin) / range * 115);
+      }
+
+      let content = `
+        <defs>
+          <linearGradient id="bbAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="#2563eb" stop-opacity="0.04"/>
+          </linearGradient>
+        </defs>
+        <!-- Horizontal Grids -->
+        <line x1="10" y1="30" x2="370" y2="30" stroke="#1e293b" stroke-dasharray="3,3"/>
+        <line x1="10" y1="85" x2="370" y2="85" stroke="#1e293b" stroke-dasharray="3,3"/>
+        <line x1="10" y1="145" x2="370" y2="145" stroke="#334155"/>
+      `;
+
+      if (appState.indicators.bb && positions.length >= 2) {
+        let upperPoints = [];
+        let lowerPoints = [];
+
+        positions.forEach(pos => {
+          const cx = (pos.x + candleW / 2).toFixed(1);
+          upperPoints.push(`${cx},${getY(pos.upper).toFixed(1)}`);
+          lowerPoints.unshift(`${cx},${getY(pos.lower).toFixed(1)}`);
+        });
+
+        const envelopePoints = upperPoints.concat(lowerPoints).join(' ');
+        content += `<polygon points="${envelopePoints}" fill="url(#bbAreaGrad)" stroke="none"/>`;
+        content += `<polyline points="${upperPoints.join(' ')}" fill="none" stroke="#0284c7" stroke-width="1.3" stroke-dasharray="3,3" opacity="0.95"/>`;
+
+        const lowerReversed = positions.map(pos => `${(pos.x + candleW / 2).toFixed(1)},${getY(pos.lower).toFixed(1)}`).join(' ');
+        content += `<polyline points="${lowerReversed}" fill="none" stroke="#0284c7" stroke-width="1.3" stroke-dasharray="3,3" opacity="0.95"/>`;
+
+        const midPoints = positions.map(pos => `${(pos.x + candleW / 2).toFixed(1)},${getY(pos.midPrice).toFixed(1)}`).join(' ');
+        content += `<polyline points="${midPoints}" fill="none" stroke="#60a5fa" stroke-width="1.1" stroke-dasharray="2,2" opacity="0.8"/>`;
+
+        const lastPos = positions[positions.length - 1];
+        const isDollar = stock.currency === '$';
+        const upStr = isDollar ? `$${lastPos.upper.toFixed(1)}` : `${Math.round(lastPos.upper).toLocaleString()}`;
+        const lowStr = isDollar ? `$${lastPos.lower.toFixed(1)}` : `${Math.round(lastPos.lower).toLocaleString()}`;
+        content += `
+          <g transform="translate(10, 14)">
+            <rect x="0" y="0" width="186" height="15" fill="#0f172a" opacity="0.85" rx="3"/>
+            <text x="6" y="11" fill="#38bdf8" font-size="8.5" font-weight="700">BB(20,2) 상:${upStr} / 하:${lowStr}</text>
+          </g>
+        `;
+      }
+
+      positions.forEach(pos => {
+        const c = pos.c;
+        const x = pos.x;
+        const yO = getY(c.o);
+        const yC = getY(c.c);
+        const yH = getY(c.h);
+        const yL = getY(c.l);
+        const isUp = c.c >= c.o;
+        const color = isUp ? '#ef4444' : '#2563eb';
+        const bodyTop = Math.min(yO, yC);
+        const bodyH = Math.max(3, Math.abs(yC - yO));
+
+        content += `
+          <line x1="${x + candleW / 2}" y1="${yH}" x2="${x + candleW / 2}" y2="${yL}" stroke="${color}" stroke-width="1.5"/>
+          <rect x="${x}" y="${bodyTop}" width="${candleW}" height="${bodyH}" fill="${color}" rx="2"/>
+        `;
+
+        if (appState.indicators.volume) {
+          const vH = Math.min(30, (c.v / 180) * 30);
+          content += `<rect x="${x + 2}" y="${176 - vH}" width="${candleW - 4}" height="${vH}" fill="${color}" opacity="0.32" rx="1"/>`;
+        }
+      });
+
+      if (appState.indicators.ma && positions.length >= 2) {
+        let ma5 = "";
+        positions.forEach((pos, i) => {
+          const slice = positions.slice(Math.max(0, i - 2), i + 1);
+          const avg = slice.reduce((a, b) => a + b.c.c, 0) / slice.length;
+          ma5 += `${pos.x + candleW / 2},${getY(avg)} `;
+        });
+        content += `<polyline points="${ma5.trim()}" fill="none" stroke="#f59e0b" stroke-width="1.8"/>`;
+
+        let ma20 = "";
+        positions.forEach((pos, i) => {
+          const slice = positions.slice(Math.max(0, i - 4), i + 1);
+          const avg = slice.reduce((a, b) => a + (b.c.o + b.c.c) / 2, 0) / slice.length;
+          ma20 += `${pos.x + candleW / 2},${getY(avg)} `;
+        });
+        content += `<polyline points="${ma20.trim()}" fill="none" stroke="#2563eb" stroke-width="2.2"/>`;
+      }
+
+      svg.innerHTML = content;
+    }
+
+    function handleReplaySlider(val) {
+      const idx = parseInt(val, 10);
+      const stock = STOCKS_DATA[appState.currentStock] || STOCKS_DATA['DB하이텍'];
+      const dates = ['2026.09.05', '2026.09.12', '2026.09.20', '2026.09.28'];
+      const summaries = [
+        '※ 09.05 시뮬레이션: 바닥 다지기 구간. 이동평균선 수렴 대기.',
+        '※ 09.12 시뮬레이션: 20일선 첫 지지 반등 포착. 분할 접근 검토 구간.',
+        '※ 09.20 시뮬레이션: 거래량 +300% 폭증 및 Stage 2 돌파 신호 확인.',
+        `※ 현재 시뮬레이션: ${stock.tag || '20일선 지지 후 추세 지속 구간입니다.'}`
+      ];
+
+      const lbl = document.getElementById('replayDateLabel');
+      if (lbl) lbl.innerText = `${dates[idx - 1]} (시점)`;
+      const sum = document.getElementById('replaySummaryText');
+      if (sum) sum.innerText = summaries[idx - 1];
+
+      renderSvgCandleChart();
+    }
+
+    function renderNaviPriceSetup(stockName) {
+      const container = document.getElementById('naviPriceSetupHudContainer');
+      if (!container) return;
+      const stock = STOCKS_DATA[stockName] || STOCKS_DATA['DB하이텍'];
+      const isDollar = stock.currency === '$';
+
+      const holding = userPortfolio.holdings[stockName];
+      const isHeld = holding && holding.qty > 0;
+      const curP = stock.price;
+
+      let situation = 'A';
+      if (isHeld) {
+        situation = (curP >= holding.avgPrice) ? 'B' : 'C';
+      }
+
+      let content = '';
+
+      if (situation === 'A') {
+        content = `
+          <div class="navi-hud-card p-3.5 space-y-2">
+            <div class="flex justify-between items-center border-b border-cyan-500/30 pb-1.5">
+              <span class="text-xs font-bold text-cyan-300">[Situation A] 미보유 종목 신규 진입 가이드</span>
+              <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">손익비 1 : 2.85</span>
+            </div>
+            <div class="text-[11px] text-slate-200 leading-snug space-y-1">
+              <div>• 진입 추천 밴드: <strong class="text-white">${isDollar ? '$'+(curP*0.98).toFixed(2) : Math.round(curP*0.98).toLocaleString()+'원'} ~ ${isDollar ? '$'+curP.toFixed(2) : curP.toLocaleString()+'원'}</strong></div>
+              <div>• 전략 무효화(손절): <strong class="text-red-400">${isDollar ? '$'+(curP*0.94).toFixed(2) : Math.round(curP*0.94).toLocaleString()+'원'} (-5.4%)</strong></div>
+              <div>• 1차 목표가: <strong class="text-cyan-300">${isDollar ? '$'+(curP*1.12).toFixed(2) : Math.round(curP*1.12).toLocaleString()+'원'} (+12.0%)</strong></div>
+            </div>
+            <div class="flex gap-2 pt-1">
+              <button onclick="openAmountOrderModal('${stockName}', 1000000)" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white text-xs font-bold text-center">
+                ⚡ 100만원 주문화면 열기
+              </button>
+              <button onclick="openAlertBuilder('${stockName}')" class="flex-1 py-2 rounded-xl bg-slate-800 text-cyan-300 border border-slate-700 text-xs font-bold text-center">
+                손절선 감시 등록
+              </button>
+            </div>
+          </div>
+        `;
+      } else if (situation === 'B') {
+        content = `
+          <div class="navi-hud-card p-3.5 space-y-2">
+            <div class="flex justify-between items-center border-b border-cyan-500/30 pb-1.5">
+              <span class="text-xs font-bold text-cyan-300">[Situation B] 보유 중 · 수익 관리 &amp; 익절</span>
+              <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">수익 보존 구간</span>
+            </div>
+            <div class="text-[11px] text-slate-200 leading-snug space-y-1">
+              <div>• 트레일링 스탑: <strong>현재가 대비 -3.0% 이탈 시 50% 분할 익절</strong> 권장</div>
+              <div>• 1차 저항선: 138,000원 돌파 테스트 중</div>
+              <div>• 불타기 주의: 평단가 상승 리스크로 분할 접근 권고</div>
+            </div>
+            <div class="flex gap-2 pt-1">
+              <button onclick="openSellOrderSheet('${stockName}')" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-bold text-center">
+                📉 보유분 50% 분할 익절
+              </button>
+              <button onclick="openAlertBuilder('${stockName}')" class="flex-1 py-2 rounded-xl bg-slate-800 text-cyan-300 border border-slate-700 text-xs font-bold text-center">
+                익절선 알림 설정
+              </button>
+            </div>
+          </div>
+        `;
+      } else {
+        content = `
+          <div class="navi-hud-card p-3.5 space-y-2 border-red-500 bg-red-950/90">
+            <div class="flex justify-between items-center border-b border-red-500/40 pb-1.5">
+              <span class="text-xs font-bold text-red-400">[Situation C] 보유 중 · 물타기 금지 및 탈출</span>
+              <span class="text-[10px] bg-red-900 text-red-200 px-2 py-0.5 rounded font-bold">Anti-Tilt 개입</span>
+            </div>
+            <div class="text-[11px] text-red-100 leading-snug space-y-1">
+              <div>• <strong>맹목적 추가 매수(물타기) 제한:</strong> 거래량 동반 바닥 확인 전 대기</div>
+              <div>• 기술적 반등 탈출 타점: 20일선(268,000원) 회복 시 본전/약손실 분할 매도</div>
+            </div>
+            <div class="flex gap-2 pt-1">
+              <button onclick="openSellOrderSheet('${stockName}')" class="flex-1 py-2 rounded-xl bg-red-700 text-white text-xs font-bold text-center">
+                반등 시 50% 분할 탈출
+              </button>
+              <button onclick="openAlertBuilder('${stockName}')" class="flex-1 py-2 rounded-xl bg-slate-900 text-red-300 border border-red-500/40 text-xs font-bold text-center">
+                탈출 타점 알림
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = content;
+    }
+
+    function triggerQuickChatPrompt(text) {
+      const inp = document.getElementById('liveChatInput');
+      if (inp) {
+        inp.value = text;
+        sendLiveChat();
+      }
+    }
+
+    async function sendLiveChat() {
+      const inp = document.getElementById('liveChatInput');
+      if (!inp || !inp.value.trim()) return;
+      const text = inp.value.trim();
+      inp.value = '';
+
+      playSound('click');
+      const flow = document.getElementById('dynamicChatContainer');
+      const think = document.getElementById('chatThinkingContainer');
+      if (!flow) return;
+
+      const userBubble = document.createElement('div');
+      userBubble.className = 'p-3 bg-blue-600 text-white rounded-2xl text-xs max-w-[85%] ml-auto leading-relaxed shadow-sm';
+      userBubble.innerText = text;
+      flow.appendChild(userBubble);
+
+      const stream = document.getElementById('chatMessageFlow');
+      if (stream) stream.scrollTop = stream.scrollHeight;
+
+      if (think) think.classList.remove('hidden');
+
+      let responsePayload = null;
+      try {
+        responsePayload = await generateAgentChatResponse(text);
+      } catch (err) {
+        responsePayload = parseChatLocally(text);
+      }
+
+      if (think) think.classList.add('hidden');
+      playSound('success');
+
+      const aiBubble = document.createElement('div');
+      aiBubble.className = 'p-3.5 bg-white border border-slate-200 rounded-2xl text-xs text-slate-800 space-y-2.5 shadow-md';
+      aiBubble.innerHTML = responsePayload.html;
+      flow.appendChild(aiBubble);
+
+      addAgentTimeline('User Chat Action', `명령 처리: "${text.slice(0, 24)}..."`, '대화 대행');
+
+      if (stream) stream.scrollTop = stream.scrollHeight;
+    }
+
+    async function generateAgentChatResponse(userQuery) {
+      let currentStock = agentBrain.focusStock || "DB하이텍";
+      Object.keys(STOCKS_DATA).forEach(name => {
+        if (userQuery.includes(name)) {
+          currentStock = name;
+          agentBrain.focusStock = name;
+        }
+      });
+      const tag = document.getElementById('chatFocusTag');
+      if (tag) tag.innerText = `Focus: ${currentStock}`;
+
+      const stockData = STOCKS_DATA[currentStock] || STOCKS_DATA['DB하이텍'];
+      const holding = userPortfolio.holdings[currentStock] || { qty: 0, avgPrice: 0 };
+
+      if (userQuery.includes('어르신') || userQuery.includes('알기 쉽게') || userQuery.includes('쉽게 설명')) {
+        const text = "어르신, 현재 계좌는 470만 원으로 12만 9천 원 벌고 계십니다. 너무 한 바구니에 반도체만 담겨 있어 다른 좋은 주식으로 조금 나누시길 권해 드립니다.";
+        speakNavi(text, "어르신 맞춤 계좌 브리핑");
+        return {
+          html: `
+            <div class="border-b border-amber-200 pb-1.5 flex justify-between items-center">
+              <strong class="text-amber-800 font-bold flex items-center gap-1">
+                <i class="fa-solid fa-person-cane"></i> [어르신 안심 계좌 브리핑]
+              </strong>
+              <button onclick="readAloudText('${text}')" class="px-2 py-0.5 rounded bg-amber-500 text-white font-bold text-[10px] flex items-center gap-1">
+                <i class="fa-solid fa-volume-high"></i> 다시 듣기
+              </button>
+            </div>
+            <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1.5 text-xs text-amber-950">
+              <div>• <strong>현재 총자산:</strong> 4,704,305원 (약 470만 원)</div>
+              <div>• <strong>현재 이익:</strong> <strong class="text-red-600">+129,505원</strong> (+4.21%)</div>
+              <div>• <strong>주의할 점:</strong> 반도체 주식에만 68% 몰려 있어 시장이 출렁일 때 위험할 수 있습니다.</div>
+            </div>
+            <div class="flex gap-1.5 pt-1">
+              <button onclick="openDividendSalarySheet()" class="flex-1 py-2 rounded-xl bg-emerald-600 text-white font-bold text-center">
+                따박따박 월 50만 배당 채우기
+              </button>
+              <button onclick="openRebalanceSheet()" class="flex-1 py-2 rounded-xl bg-blue-600 text-white font-bold text-center">
+                안전하게 분산하기
+              </button>
+            </div>
+          `
+        };
+      }
+
+      if (userQuery.includes('배당') || userQuery.includes('월급')) {
+        return {
+          html: `
+            <div class="border-b border-emerald-100 pb-1.5">
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">제2의 월급 플래너</span>
+              <strong class="text-emerald-700 font-bold block mt-1">월 50만 원 배당 파이프라인 제안</strong>
+            </div>
+            <p class="text-slate-700 leading-relaxed text-xs">
+              현재 계좌의 월평균 배당은 약 4만 원입니다. <strong>TIGER 미국배당다우존스</strong>와 <strong>ACE 미국30년국채</strong>를 분할 편입하시면 매달 15일 따박따박 50만 원의 배당을 수령하실 수 있습니다.
+            </p>
+            <button onclick="openDividendSalarySheet()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-center shadow-md">
+              ⚡ 월 50만 배당 패키지 설계서 보기
+            </button>
+          `
+        };
+      }
+
+      if (userQuery.includes('적립') || userQuery.includes('3주씩') || userQuery.includes('미션')) {
+        return createRecurringMissionCard(userQuery, currentStock);
+      }
+      if (userQuery.includes('더 사면') || userQuery.includes('더 넣으면') || userQuery.includes('100만원 더')) {
+        return createWhatIfCard(currentStock, 1000000);
+      }
+      if (userQuery.includes('20일선') || userQuery.includes('알려줘') || userQuery.includes('알림')) {
+        return createAlertRegisterCard(currentStock);
+      }
+      if (userQuery.includes('여행') || userQuery.includes('도쿄') || userQuery.includes('출장') || userQuery.includes('부재')) {
+        return createTravelGuardCard(userQuery);
+      }
+      if (userQuery.includes('몰렸어') || userQuery.includes('반도체') || userQuery.includes('진단')) {
+        return createXrayDiagCard();
+      }
+
+      try {
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const systemPrompt = `당신은 현대차증권 MTS 초개인화 AI Agent 'NAVI'입니다. 
+사용자의 의도를 파악하여 구체적인 투자 타점 및 1-Tap 실행 카드를 조립하는 Action Agent입니다.
+현재 사용자의 초점 종목은 [${currentStock}] (현재가: ${stockData.price}원, 등락: ${stockData.change}, Stage: ${stockData.stage}) 입니다.
+보유 상태: 수량 ${holding.qty}주, 평단가 ${holding.avgPrice}원.
+지침: 2~3문장 이내로 명확하게 요약하고 행동 제안을 포함하세요.`;
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (replyText) {
+            return {
+              html: `
+                <div class="border-b border-slate-100 pb-1.5 flex justify-between items-center">
+                  <strong class="text-blue-600 font-bold">[NAVI Action Agent 브리핑]</strong>
+                  <span class="text-[9.5px] text-slate-400 font-mono">${currentStock}</span>
+                </div>
+                <p class="text-slate-700 leading-relaxed">${replyText.replace(/\n/g, '<br>')}</p>
+                <div class="flex gap-1.5 pt-1">
+                  <button onclick="selectStockAndGoChart('${currentStock}')" class="flex-1 py-2 rounded-xl bg-blue-600 text-white font-bold text-center">
+                    차트 및 HUD 확인
+                  </button>
+                  <button onclick="openAmountOrderModal('${currentStock}', 1000000)" class="flex-1 py-2 rounded-xl bg-red-600 text-white font-bold text-center">
+                    100만원 주문
+                  </button>
+                </div>
+              `
+            };
+          }
+        }
+      } catch (e) {}
+
+      return parseChatLocally(userQuery, currentStock);
+    }
+
+    function parseChatLocally(query, stockName = 'DB하이텍') {
+      const stock = STOCKS_DATA[stockName] || STOCKS_DATA['DB하이텍'];
+      return {
+        html: `
+          <div class="border-b border-slate-100 pb-1.5 flex justify-between items-center">
+            <strong class="text-blue-600 font-bold">[NAVI 자율 진단 브리핑: ${stockName}]</strong>
+            <span class="text-[9.5px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-bold">${stock.stage}</span>
+          </div>
+          <p class="text-slate-700 leading-relaxed">
+            "${stockName}은 20일선 지지 후 거래량(+238%)과 외국인 수급이 유입되어 단기 추세가 견고하게 유지되고 있습니다. 3대 가격 셋업을 확인하세요."
+          </p>
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-[10.5px] text-slate-700 space-y-1">
+            <div>• 기준가: <strong>${stock.price.toLocaleString()}원</strong> (${stock.change})</div>
+            <div>• 손익비: <strong>1 : 2.85 유효 진입 구간</strong></div>
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <button onclick="selectStockAndGoChart('${stockName}')" class="flex-1 py-2 rounded-xl bg-blue-600 text-white font-bold text-center">
+              차트 타점 확인
+            </button>
+            <button onclick="openAmountOrderModal('${stockName}', 1000000)" class="flex-1 py-2 rounded-xl bg-red-600 text-white font-bold text-center">
+              ⚡ 100만원 주문서 열기
+            </button>
+          </div>
+        `
+      };
+    }
+
+    function createRecurringMissionCard(query, currentStock) {
+      return {
+        html: `
+          <div class="border-b border-slate-100 pb-1.5">
+            <span class="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold">NAVI Mission 조립</span>
+            <strong class="text-blue-600 font-bold block mt-1">KODEX 미국S&amp;P500 매일 3주 정기투자 미션</strong>
+          </div>
+          <div class="bg-purple-50 p-2.5 rounded-xl border border-purple-200 text-purple-900 space-y-1">
+            <div>• 대상: <strong>KODEX 미국S&amp;P500 (379800)</strong></div>
+            <div>• 주기: <strong>매 영업일 (일 3주 정수 체결)</strong></div>
+            <div>• 일 예상액: <strong>약 71,865원 (월 약 143만 원)</strong></div>
+            <div>• 안전성: <strong>예수금 부족 시 자동 스킵</strong></div>
+          </div>
+          <button onclick="registerRecurringPlanMission('KODEX 미국S&P500', '매 영업일 3주', 71865)" class="w-full py-2.5 rounded-xl bg-purple-600 text-white font-bold text-center shadow-md">
+            ⚡ 1-Tap 에이전트 미션 영구 등록 승인
+          </button>
+        `
+      };
+    }
+
+    function createWhatIfCard(stockName, amt) {
+      return {
+        html: `
+          <div class="border-b border-slate-100 pb-1.5">
+            <span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-bold">연속 맥락 기억 (${stockName})</span>
+            <strong class="text-blue-600 font-bold block mt-1">[Portfolio Digital Twin What-If 계산]</strong>
+            ${stockName} ${Math.floor(amt/10000)}만 원 추가 매수 시 계좌 영향 사전 연산입니다.
+          </div>
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1 text-slate-700">
+            <div class="flex justify-between"><span>현재 비중:</span><strong>57.5% (14주)</strong></div>
+            <div class="flex justify-between text-red-600 font-bold"><span>매수 후 비중:</span><strong>66.8% (약 21주)</strong></div>
+            <div class="flex justify-between text-red-600 font-bold"><span>IT 편중도:</span><strong>75.2% (주의)</strong></div>
+          </div>
+          <p class="text-slate-600 text-[10.5px]">"추가 매수 시 단일 종목 집중도가 66%를 넘습니다. 분산 대안을 고려하시겠습니까?"</p>
+          <div class="flex gap-1.5">
+            <button onclick="openAmountOrderModal('${stockName}', ${amt})" class="flex-1 py-2 rounded-xl bg-red-600 text-white font-bold text-center">
+              ⚡ ${Math.floor(amt/10000)}만원 매수 진행
+            </button>
+            <button onclick="openWhatIfSheet('${stockName}', ${amt})" class="flex-1 py-2 rounded-xl bg-slate-800 text-cyan-300 font-bold text-center">
+              🔮 What-If 상세 조정
+            </button>
+          </div>
+        `
+      };
+    }
+
+    function createAlertRegisterCard(stockName) {
+      return {
+        html: `
+          <div class="border-b border-slate-100 pb-1.5">
+            <span class="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">연속 맥락 기억 (${stockName})</span>
+            <strong class="text-emerald-700 font-bold block mt-1">20일 이동평균선 감시 Alert 등록 준비</strong>
+          </div>
+          <div class="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-emerald-900 space-y-1 text-[11px]">
+            <div>• 종목: <strong>${stockName}</strong></div>
+            <div>• 감시 조건: <strong>20일선 지지 반등 시 즉시 푸시 알림</strong></div>
+            <div>• 조치: <strong>Dynamic Island 펄스 및 1-Tap 주문 초안 팝업</strong></div>
+          </div>
+          <button onclick="saveCustomAlertRuleForStock('${stockName}', '20일선 지지 반등')" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-center">
+            🔔 ${stockName} 20일선 감시 Alert 등록
+          </button>
+        `
+      };
+    }
+
+    function createTravelGuardCard(query) {
+      return {
+        html: `
+          <div class="border-b border-slate-100 pb-1.5">
+            <span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">NAVI Away Guard 제안</span>
+            <strong class="text-amber-900 font-bold block mt-1">여행·부재 중 24시간 계좌 수호 모드</strong>
+          </div>
+          <p class="text-slate-600 text-[11px]">
+            "여행 중 시차나 일정으로 시세를 못 보셔도 걱정 마세요. 급락 시 <strong>-5% 이탈 시 50% 분할 매도 초안</strong>을 준비하고 알림으로 승인만 받습니다."
+          </p>
+          <button onclick="simulateTravelDeparture(); closeSheet('amountOrderSheet');" class="w-full py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-center">
+            ✈️ 여행 모드 (Away Guard) 활성화
+          </button>
+        `
+      };
+    }
+
+    function createXrayDiagCard() {
+      return {
+        html: `
+          <div class="border-b border-slate-100 pb-1.5">
+            <strong class="text-amber-600 font-bold block">[Portfolio X-Ray 편중 진단]</strong>
+            현재 고객님 계좌의 IT·반도체 비중은 <strong>68.4%</strong>로 과집중 상태입니다.
+          </div>
+          <div class="p-2.5 bg-red-50 text-red-800 rounded-xl text-[10.5px]">
+            나스닥 -8% 충격 시 예상 손실: <strong>-184,200원 (-5.75%)</strong>
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <button onclick="openRebalanceSheet()" class="flex-1 py-2 rounded-xl bg-blue-600 text-white font-bold text-center">
+              5단계 리밸런싱 실행
+            </button>
+            <button onclick="openMarketShockSheet()" class="flex-1 py-2 rounded-xl bg-slate-800 text-cyan-300 font-bold text-center">
+              충격 테스트
+            </button>
+          </div>
+        `
+      };
+    }
+
+    function openAwayModeSheet() {
+      playSound('click');
+      closeAllSheets();
+      document.getElementById('awayModeSheet').classList.add('open');
+    }
+
+    function simulateTravelDeparture() {
+      agentBrain.travelMode = true;
+      agentBrain.travelDestination = "도쿄 (3박 4일)";
+      playSound('success');
+
+      const ticker = document.getElementById('proactiveTickerText');
+      if (ticker) ticker.innerHTML = `✈️ <strong>NAVI Context:</strong> "도쿄 체류 감지 · Away Guard 방어선 가동 중"`;
+
+      const label = document.getElementById('travelModeStatusLabel');
+      if (label) label.innerHTML = `<span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> 도쿄 출장 가동 중`;
+
+      const badge = document.getElementById('btnAwayModeBadge');
+      if (badge) {
+        badge.className = 'text-[10.5px] text-amber-800 font-bold flex items-center gap-1 bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-300';
+        badge.innerHTML = `<i class="fa-solid fa-plane text-amber-600"></i> 도쿄 체류 중`;
+      }
+
+      addAgentTimeline('Travel Guard 전환', '인천공항 출국 감지 ➔ 도쿄 체류 모드 & 부재 중 가드레일 자동 세팅', '모드 전환');
+      closeSheet('awayModeSheet');
+      showToast('✈️ 출국 감지: 도쿄 체류 모드 및 Away Guard 가동!');
+    }
+
+    function simulateTravelShockAndDraft() {
+      playSound('success');
+      addAgentTimeline('여행 중 급락 감지', '나스닥 -4.2% 충격 ➔ DB하이텍 20일선 이탈 위험 감지. 50% 분할 매도 주문 초안 준비 완료.', '대응 초안');
+
+      const banner = document.getElementById('pushNotificationBanner');
+      const cat = document.getElementById('pushBannerCategory');
+      const title = document.getElementById('pushBannerTitle');
+      const desc = document.getElementById('pushBannerDesc');
+
+      if (banner && cat && title && desc) {
+        cat.innerText = "NAVI AWAY GUARD · 주문 초안 준비";
+        title.innerText = "DB하이텍 20일선 이탈 ➔ 7주 분할 매도 초안";
+        desc.innerText = "여행 중 급락 방어를 위해 매도 주문 초안이 마련되었습니다. 승인 시 체결됩니다.";
+        banner.classList.remove('hidden');
+      }
+
+      closeSheet('awayModeSheet');
+      showToast('⚠️ 여행 중 급락 감지: 매도 주문 초안이 준비되었습니다!');
+    }
+
+    function simulateTravelReturn() {
+      agentBrain.travelMode = false;
+      agentBrain.travelDestination = null;
+      playSound('success');
+
+      const ticker = document.getElementById('proactiveTickerText');
+      if (ticker) ticker.innerHTML = `💡 <strong>NAVI Context:</strong> "인천공항 복귀 감지 · 여행 활동 브리핑 준비 완료"`;
+
+      const label = document.getElementById('travelModeStatusLabel');
+      if (label) label.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> 대기 중 (국내 체류)`;
+
+      const badge = document.getElementById('btnAwayModeBadge');
+      if (badge) {
+        badge.className = 'text-[10.5px] text-indigo-700 font-bold flex items-center gap-1 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200';
+        badge.innerHTML = `<i class="fa-solid fa-plane-departure text-indigo-600"></i> 부재·여행가드`;
+      }
+
+      addAgentTimeline('귀국 감지 리포트', '인천공항 귀국 확인 ➔ 여행 중 NAVI 활동 요약 브리핑 생성 완료', '귀국 브리핑');
+      closeSheet('awayModeSheet');
+      showToast('🛬 귀국 감지: 여행 중 자산 수호 리포트가 생성되었습니다.');
+
+      setTimeout(() => {
+        switchScreen('chat');
+        triggerQuickChatPrompt('여행 중 내 계좌 어떻게 지켜줬어?');
+      }, 700);
+    }
+
+    function openAgentBrainModal() {
+      playSound('click');
+      document.getElementById('agentBrainModal').classList.add('open');
+    }
+
+    function closeAgentBrainModal() {
+      playSound('click');
+      document.getElementById('agentBrainModal').classList.remove('open');
+    }
+
+    function addAgentTimeline(type, desc, tag) {
+      const time = new Date().toTimeString().split(' ')[0];
+      agentBrain.timeline.unshift({ time, type, desc, tag });
+      renderAgentTimeline();
+    }
+
+    function renderAgentTimeline() {
+      const container = document.getElementById('agentActivityTimelineContainer');
+      if (!container) return;
+      container.innerHTML = agentBrain.timeline.map(item => `
+        <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex items-start justify-between">
+          <div class="space-y-0.5">
+            <div class="flex items-center gap-1.5">
+              <span class="text-cyan-400 font-bold text-[11px]">${item.type}</span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 font-mono">${item.tag}</span>
+            </div>
+            <p class="text-[10.5px] text-slate-300 leading-snug">${item.desc}</p>
+          </div>
+          <span class="text-[9px] text-slate-500 font-mono shrink-0 ml-2">${item.time}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderAgentMissions() {
+      const container = document.getElementById('agentMissionContainer');
+      const badge = document.getElementById('missionCountBadge');
+      if (badge) badge.innerText = `${agentBrain.missions.length}건 활성`;
+      if (!container) return;
+
+      container.innerHTML = agentBrain.missions.map(m => `
+        <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <strong class="text-white text-xs">${m.title}</strong>
+              <span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 font-bold">${m.status}</span>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-0.5">${m.note}</p>
+          </div>
+          <button onclick="toggleMissionStatus(${m.id})" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-cyan-300 font-bold border border-slate-700">
+            관리
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function registerRecurringPlanMission(title, cycle, amt) {
+      agentBrain.missions.unshift({
+        id: Date.now(),
+        title: `${title} ${cycle} 정기투자`,
+        type: '정기투자',
+        status: 'ACTIVE',
+        note: `${cycle} (예상액: ${amt.toLocaleString()}원)`
+      });
+      playSound('success');
+      showToast('⚡ Agent Mission에 정기투자가 영구 등록되었습니다!');
+      renderAgentMissions();
+    }
+
+    function toggleMissionStatus(id) {
+      const m = agentBrain.missions.find(x => x.id === id);
+      if (m) {
+        m.status = m.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+        playSound('click');
+        showToast(`미션 상태가 [${m.status}]로 변경되었습니다.`);
+        renderAgentMissions();
+      }
+    }
+
+    function openAmountOrderModal(stockName, presetAmt = 1000000) {
+      playSound('click');
+      closeAllSheets();
+      appState.currentStock = stockName;
+      agentBrain.focusStock = stockName;
+      appState.selectedOrderAmount = presetAmt;
+
+      const stock = STOCKS_DATA[stockName] || STOCKS_DATA['DB하이텍'];
+      const isDollar = stock.currency === '$';
+      const dispP = isDollar ? `$${stock.price.toFixed(2)}` : `${stock.price.toLocaleString()}원`;
+
+      document.getElementById('buySheetStockName').innerText = `${stockName} (${stock.code})`;
+      document.getElementById('buySheetPrice').innerText = dispP;
+      document.getElementById('buyAmountInput').value = presetAmt;
+      document.getElementById('buySheetMyCash').innerText = `${userPortfolio.cash.toLocaleString()}원`;
+
+      calculateBuyAmountShares();
+      document.getElementById('amountOrderSheet').classList.add('open');
+    }
+
+    function setBuyPreset(amt) {
+      playSound('click');
+      document.getElementById('buyAmountInput').value = amt;
+      calculateBuyAmountShares();
+    }
+
+    function calculateBuyAmountShares() {
+      const stock = STOCKS_DATA[appState.currentStock] || STOCKS_DATA['DB하이텍'];
+      const amtInput = document.getElementById('buyAmountInput');
+      const amt = parseFloat(amtInput ? amtInput.value : 1000000) || 0;
+      const unitP = stock.currency === '$' ? Math.round(stock.price * 1390) : stock.price;
+
+      const shares = Math.floor(amt / unitP);
+      const estTotal = shares * unitP;
+      const remain = amt - estTotal;
+
+      document.getElementById('buyCalcShares').innerText = `${shares}주`;
+      document.getElementById('buyCalcEstTotal').innerText = `${estTotal.toLocaleString()}원`;
+      document.getElementById('buyCalcRemainder').innerText = `${remain.toLocaleString()}원`;
+
+      const btn = document.getElementById('btnExecuteBuy');
+      if (userPortfolio.cash < estTotal) {
+        btn.innerText = '⚠️ 주문가능금액(예수금) 부족';
+        btn.disabled = true;
+        btn.classList.add('opacity-50');
+      } else if (shares === 0) {
+        btn.innerText = '⚠️ 1주 이상 주문 불가 (금액 부족)';
+        btn.disabled = true;
+        btn.classList.add('opacity-50');
+      } else {
+        btn.innerText = `⚡ ${shares}주 시장가 모의 매수 주문 실행`;
+        btn.disabled = false;
+        btn.classList.remove('opacity-50');
+      }
+    }
+
+    function executeSimulatedBuy() {
+      const stock = STOCKS_DATA[appState.currentStock] || STOCKS_DATA['DB하이텍'];
+      const amtInput = document.getElementById('buyAmountInput');
+      const amt = parseFloat(amtInput ? amtInput.value : 1000000) || 0;
+      const unitP = stock.currency === '$' ? Math.round(stock.price * 1390) : stock.price;
+      const shares = Math.floor(amt / unitP);
+      const totalCost = shares * unitP;
+
+      if (userPortfolio.cash < totalCost || shares <= 0) {
+        showToast('주문 금액이 부족합니다.');
+        return;
+      }
+
+      userPortfolio.cash -= totalCost;
+      if (!userPortfolio.holdings[appState.currentStock]) {
+        userPortfolio.holdings[appState.currentStock] = { qty: 0, avgPrice: unitP, sector: stock.sector };
+      }
+      userPortfolio.holdings[appState.currentStock].qty += shares;
+
+      playSound('success');
+      closeSheet('amountOrderSheet');
+      showToast(`✅ [체결] ${appState.currentStock} ${shares}주 체결 완료!`);
+      addAgentTimeline('모의 체결 완료', `${appState.currentStock} ${shares}주 매수 (-${totalCost.toLocaleString()}원)`, '체결');
+      renderBalanceScreen();
+    }
+
+    function openSellOrderSheet(stockName) {
+      playSound('click');
+      closeAllSheets();
+      appState.currentStock = stockName;
+      agentBrain.focusStock = stockName;
+      const holding = userPortfolio.holdings[stockName];
+      const curQ = holding ? holding.qty : 0;
+
+      if (curQ <= 0) {
+        showToast('보유 수량이 없습니다.');
+        return;
+      }
+
+      document.getElementById('sellSheetStockName').innerText = `${stockName} 매도`;
+      document.getElementById('sellSheetHoldQty').innerText = `보유 ${curQ}주`;
+      setSellRatio(0.5);
+      document.getElementById('sellOrderSheet').classList.add('open');
+    }
+
+    function setSellRatio(ratio) {
+      playSound('click');
+      const holding = userPortfolio.holdings[appState.currentStock];
+      const curQ = holding ? holding.qty : 0;
+      const sellShares = Math.max(1, Math.floor(curQ * ratio));
+      const stock = STOCKS_DATA[appState.currentStock] || STOCKS_DATA['DB하이텍'];
+      const unitP = stock.currency === '$' ? Math.round(stock.price * 1390) : stock.price;
+
+      document.getElementById('sellCalcShares').innerText = `${sellShares}주 (${Math.round(ratio*100)}%)`;
+      document.getElementById('sellCalcTotal').innerText = `${(sellShares * unitP).toLocaleString()}원`;
+    }
+
+    function customSellPrompt() {
+      const ans = prompt('매도할 수량을 입력하세요:', '5');
+      if (ans && parseInt(ans, 10) > 0) {
+        const shares = parseInt(ans, 10);
+        const stock = STOCKS_DATA[appState.currentStock] || STOCKS_DATA['DB하이텍'];
+        const unitP = stock.currency === '$' ? Math.round(stock.price * 1390) : stock.price;
+        document.getElementById('sellCalcShares').innerText = `${shares}주`;
+        document.getElementById('sellCalcTotal').innerText = `${(shares * unitP).toLocaleString()}원`;
+      }
+    }
+
+    function executeSimulatedSell() {
+      const holding = userPortfolio.holdings[appState.currentStock];
+      const txt = document.getElementById('sellCalcShares').innerText;
+      const shares = parseInt(txt, 10) || 5;
+
+      if (!holding || holding.qty < shares) {
+        showToast('매도 가능 수량 초과');
+        return;
+      }
+
+      const stock = STOCKS_DATA[appState.currentStock] || STOCKS_DATA['DB하이텍'];
+      const unitP = stock.currency === '$' ? Math.round(stock.price * 1390) : stock.price;
+      const proceeds = shares * unitP;
+
+      holding.qty -= shares;
+      userPortfolio.cash += proceeds;
+
+      playSound('success');
+      closeSheet('sellOrderSheet');
+      showToast(`📉 [매도 완료] ${appState.currentStock} ${shares}주 매도 완료 (+${proceeds.toLocaleString()}원)`);
+      addAgentTimeline('모의 매도 완료', `${appState.currentStock} ${shares}주 매도 (+${proceeds.toLocaleString()}원 확보)`, '매도');
+      renderBalanceScreen();
+    }
+
+    function openWhatIfSheet(stockName, amt = 5000000) {
+      playSound('click');
+      closeAllSheets();
+      document.getElementById('whatIfStockSelect').value = stockName || 'DB하이텍';
+      document.getElementById('whatIfAmtInput').value = amt;
+      runWhatIfCalculation();
+      document.getElementById('whatIfSheet').classList.add('open');
+    }
+
+    function setWhatIfAmtPreset(amt) {
+      playSound('click');
+      document.getElementById('whatIfAmtInput').value = amt;
+      runWhatIfCalculation();
+    }
+
+    function runWhatIfCalculation() {
+      const stockName = document.getElementById('whatIfStockSelect').value;
+      const addAmt = parseFloat(document.getElementById('whatIfAmtInput').value) || 5000000;
+
+      const isDanger = (stockName === 'DB하이텍' || stockName === '삼성전자');
+      const wEl = document.getElementById('whatIfWeightChange');
+      const sEl = document.getElementById('whatIfSectorChange');
+      const xEl = document.getElementById('whatIfXrayScoreChange');
+      const advEl = document.getElementById('whatIfAdviceText');
+
+      if (isDanger) {
+        wEl.innerText = `57.5% ➔ ${(57.5 + (addAmt/1000000)*5.2).toFixed(1)}% (과다 집중)`;
+        sEl.innerText = `68.4% ➔ ${(68.4 + (addAmt/1000000)*4.6).toFixed(1)}%`;
+        xEl.innerText = `68점 ➔ 52점 (위험군 하락)`;
+        advEl.className = 'p-2.5 bg-red-100 rounded-lg text-[10.5px] text-red-800 leading-snug';
+        advEl.innerText = '⚠️ 반도체 섹터 편중이 심화되어 급락장에 취약해집니다. KODEX 미국S&P500 등 지수 분산을 권고합니다.';
+      } else {
+        wEl.innerText = `0.0% ➔ 38.5% (건전 분산)`;
+        sEl.innerText = `68.4% ➔ 41.2% (편중 완화)`;
+        xEl.innerText = `68점 ➔ 84점 (안정도 상승)`;
+        advEl.className = 'p-2.5 bg-emerald-100 rounded-lg text-[10.5px] text-emerald-800 leading-snug';
+        advEl.innerText = '✅ 글로벌 자산 분산으로 포트폴리오 변동성이 38% 감소하며 급락장 방어력이 극대화됩니다.';
+      }
+    }
+
+    function applyWhatIfToOrder() {
+      const sName = document.getElementById('whatIfStockSelect').value;
+      closeSheet('whatIfSheet');
+      openAmountOrderModal(sName, 1000000);
+    }
+
+    function openRebalanceSheet() {
+      playSound('click');
+      closeAllSheets();
+      appState.rebalanceStep = 1;
+      updateRebalanceUI();
+      document.getElementById('rebalanceSheet').classList.add('open');
+    }
+
+    function nextRebalanceStep() {
+      if (appState.rebalanceStep < 5) {
+        appState.rebalanceStep++;
+        updateRebalanceUI();
+      } else {
+        userPortfolio.holdings['DB하이텍'].qty = Math.max(0, userPortfolio.holdings['DB하이텍'].qty - 5);
+        if (!userPortfolio.holdings['KODEX 미국S&P500']) {
+          userPortfolio.holdings['KODEX 미국S&P500'] = { qty: 0, avgPrice: 23955, sector: '글로벌지수' };
+        }
+        userPortfolio.holdings['KODEX 미국S&P500'].qty += 27;
+
+        playSound('success');
+        closeSheet('rebalanceSheet');
+        showToast('✅ 5단계 리밸런싱 모의 체결 완료! (DB하이텍 매도 + S&P500 매수)');
+        addAgentTimeline('5단계 리밸런싱', 'DB하이텍 5주 축소 ➔ S&P500 27주 신규 분산 체결', '리밸런싱');
+        renderBalanceScreen();
+      }
+    }
+
+    function prevRebalanceStep() {
+      if (appState.rebalanceStep > 1) {
+        appState.rebalanceStep--;
+        updateRebalanceUI();
+      }
+    }
+
+    function updateRebalanceUI() {
+      playSound('click');
+      const step = appState.rebalanceStep;
+      for (let i = 1; i <= 5; i++) {
+        const el = document.getElementById(`rebStep-${i}`);
+        if (el) {
+          el.className = (i === step)
+            ? 'px-2 py-0.5 rounded-full bg-blue-600 text-white font-bold'
+            : (i < step ? 'px-2 py-0.5 rounded-full bg-emerald-600 text-white' : 'px-2 py-0.5 rounded-full');
+        }
+      }
+
+      const body = document.getElementById('rebalanceStepBody');
+      const prevBtn = document.getElementById('btnRebPrev');
+      const nextBtn = document.getElementById('btnRebNext');
+
+      if (prevBtn) prevBtn.classList.toggle('hidden', step === 1);
+
+      if (step === 1) {
+        body.innerHTML = `
+          <strong class="text-slate-900 block font-bold mb-1">1단계: 진단 및 제안</strong>
+          <p class="text-slate-600 leading-relaxed">계좌 내 IT·반도체 비중(68.4%)이 과다합니다. S&amp;P500 지수 ETF 38% 편입을 제안합니다.</p>
+        `;
+        nextBtn.innerText = '다음 (2.변경전) ➔';
+      } else if (step === 2) {
+        body.innerHTML = `
+          <strong class="text-slate-900 block font-bold mb-1">2단계: 변경 전 포트폴리오</strong>
+          <div class="p-2 bg-slate-50 rounded border space-y-1">
+            <div class="flex justify-between"><span>DB하이텍 (14주)</span><strong class="text-red-600">57.5%</strong></div>
+            <div class="flex justify-between"><span>삼성전자 (5주)</span><strong class="text-red-600">42.5%</strong></div>
+          </div>
+        `;
+        nextBtn.innerText = '다음 (3.변경후) ➔';
+      } else if (step === 3) {
+        body.innerHTML = `
+          <strong class="text-blue-900 block font-bold mb-1">3단계: 목표 포트폴리오</strong>
+          <div class="p-2 bg-blue-50 text-blue-900 rounded border space-y-1">
+            <div class="flex justify-between"><span>DB하이텍 (9주)</span><strong>37.0%</strong></div>
+            <div class="flex justify-between"><span>KODEX 미국S&P500 (신규 27주)</span><strong class="text-blue-600">38.0%</strong></div>
+          </div>
+        `;
+        nextBtn.innerText = '다음 (4.주문내역) ➔';
+      } else if (step === 4) {
+        body.innerHTML = `
+          <strong class="text-slate-900 block font-bold mb-1">4단계: 자동 생성 주문 내역</strong>
+          <div class="p-2 bg-slate-50 rounded border space-y-1">
+            <div class="flex justify-between text-blue-600"><span>[매도] DB하이텍 5주</span><strong>+658,500원 확보</strong></div>
+            <div class="flex justify-between text-red-600"><span>[매수] KODEX S&P500 27주</span><strong>-646,785원 매수</strong></div>
+          </div>
+        `;
+        nextBtn.innerText = '다음 (5.최종승인) ➔';
+      } else {
+        body.innerHTML = `
+          <strong class="text-emerald-900 block font-bold mb-1">5단계: 고객 최종 전자 승인</strong>
+          <p class="text-emerald-800 leading-relaxed">위 두 건의 주문을 1-Tap으로 일괄 체결하시겠습니까?</p>
+        `;
+        nextBtn.innerText = '⚡ 1-Tap 최종 리밸런싱 실행';
+      }
+    }
+
+    function renderBalanceScreen() {
+      const area = document.getElementById('balanceHoldingsList');
+      if (!area) return;
+      area.innerHTML = '';
+
+      let totalVal = 0;
+      Object.keys(userPortfolio.holdings).forEach(name => {
+        const item = userPortfolio.holdings[name];
+        if (item.qty <= 0) return;
+        const stock = STOCKS_DATA[name] || { price: 100000 };
+        const price = stock.currency === '$' ? Math.round(stock.price * 1390) : stock.price;
+        const curVal = item.qty * price;
+        totalVal += curVal;
+
+        const row = document.createElement('div');
+        row.className = 'py-2 flex items-center justify-between';
+        row.innerHTML = `
+          <div>
+            <strong class="text-xs text-slate-900 block">${name}</strong>
+            <span class="text-[10.5px] text-slate-500 font-mono">보유 ${item.qty}주 · 평단 ${item.avgPrice.toLocaleString()}원</span>
+          </div>
+          <div class="text-right flex items-center gap-2">
+            <div>
+              <div class="text-xs font-mono font-bold text-slate-900">${curVal.toLocaleString()}원</div>
+              <div class="text-[10px] text-red-500 font-bold">+4.44%</div>
+            </div>
+            <button onclick="openSellOrderSheet('${name}')" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-blue-600 text-[10.5px] font-bold">
+              매도
+            </button>
+          </div>
+        `;
+        area.appendChild(row);
+      });
+
+      const totalAsset = totalVal + userPortfolio.cash;
+      document.getElementById('balanceNetAsset').innerText = `${totalAsset.toLocaleString()}원`;
+      document.getElementById('balanceCash').innerText = `${userPortfolio.cash.toLocaleString()}원`;
+    }
+
+    function switchCategoryTab(cat) {
+      playSound('click');
+      appState.activeCategory = cat;
+      ['domestic', 'overseas', 'pension'].forEach(c => {
+        const btn = document.getElementById(`tabBtn-${c}`);
+        if (btn) {
+          btn.className = (c === cat)
+            ? 'text-blue-600 border-b-2 border-blue-600 pb-1 font-bold'
+            : 'text-slate-400 hover:text-slate-700 pb-1 font-bold';
+        }
+      });
+      renderHomeStockFeed();
+    }
+
+    function renderHomeStockFeed() {
+      const container = document.getElementById('stockListContainer');
+      if (!container) return;
+      const filtered = Object.entries(STOCKS_DATA).filter(([_, data]) => data.category === appState.activeCategory);
+
+      container.innerHTML = filtered.map(([name, data]) => `
+        <div onclick="selectStockAndGoChart('${name}')" class="py-2.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition px-1">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <strong class="text-xs text-slate-900">${name}</strong>
+              <span class="text-[9px] px-1 rounded bg-slate-100 text-slate-500 font-mono">${data.code}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+              <span>${data.type}</span> · <span class="text-cyan-600 font-semibold">${data.stage}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs font-mono font-bold ${data.change.startsWith('+') ? 'text-red-500' : 'text-blue-500'}">
+              ${data.currency === '$' ? '$' + data.price.toFixed(2) : data.price.toLocaleString() + '원'}
+            </div>
+            <div class="text-[10px] font-bold ${data.change.startsWith('+') ? 'text-red-500' : 'text-blue-500'}">
+              ${data.change}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function selectStockAndGoChart(stockName) {
+      playSound('click');
+      appState.currentStock = stockName;
+      agentBrain.focusStock = stockName;
+      const tag = document.getElementById('chatFocusTag');
+      if (tag) tag.innerText = `Focus: ${stockName}`;
+
+      const data = STOCKS_DATA[stockName] || STOCKS_DATA['DB하이텍'];
+      document.getElementById('chartStockName').innerText = stockName;
+      document.getElementById('chartStockCode').innerText = data.code;
+      document.getElementById('chartStockStage').innerText = data.stage;
+      document.getElementById('chartPriceDisplay').innerText = data.currency === '$' ? `$${data.price.toFixed(2)}` : `${data.price.toLocaleString()}원`;
+      document.getElementById('chartChangeDisplay').innerText = `${data.change} ${data.change.startsWith('+') ? '▲' : '▼'}`;
+
+      switchScreen('chart');
+    }
+
+    function handleAutoMasterToggle() {
+      appState.autoEnabled = !appState.autoEnabled;
+      const btn = document.getElementById('autoMasterToggleBtn');
+      if (btn) {
+        btn.innerText = appState.autoEnabled ? 'ACTIVE' : 'OFF';
+        btn.className = appState.autoEnabled
+          ? 'px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-600 text-white shadow'
+          : 'px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700';
+      }
+      showToast(appState.autoEnabled ? '🔐 자동주문 시뮬레이션 활성화' : '자동주문 정지');
+    }
+
+    function triggerEmergencyStop() {
+      appState.autoEnabled = false;
+      const btn = document.getElementById('autoMasterToggleBtn');
+      if (btn) {
+        btn.innerText = 'OFF';
+        btn.className = 'px-3 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700';
+      }
+      playSound('success');
+      showToast('🛑 NAVI 자동주문 전체가 긴급 중지되었습니다.');
+    }
+
+    function openAlertBuilder(stockName) {
+      playSound('click');
+      closeAllSheets();
+      document.getElementById('alertStockName').innerText = stockName;
+      document.getElementById('alertBuilderSheet').classList.add('open');
+    }
+
+    function saveCustomAlertRule() {
+      playSound('success');
+      closeSheet('alertBuilderSheet');
+      showToast(`🔔 [${appState.currentStock}] 알림 규칙이 등록되었습니다.`);
+      addAgentTimeline('Alert 등록', `${appState.currentStock} 기술적 분석 조건 감시 활성화`, '알림');
+    }
+
+    function saveCustomAlertRuleForStock(stock, cond) {
+      playSound('success');
+      showToast(`🔔 [${stock}] ${cond} 알림이 등록되었습니다.`);
+      addAgentTimeline('Alert 등록', `${stock} ${cond} 감시 활성화`, '알림');
+    }
+
+    function openMarketShockSheet() {
+      playSound('click');
+      closeAllSheets();
+      calculateMarketShock(-8);
+      document.getElementById('marketShockSheet').classList.add('open');
+    }
+
+    function calculateMarketShock(val) {
+      document.getElementById('shockValDisplay').innerText = `${val}%`;
+      const impact = (parseFloat(val) * 0.72).toFixed(2);
+      const estLoss = Math.round(3204305 * (Math.abs(parseFloat(val) * 0.72) / 100));
+      document.getElementById('shockEstLossAmount').innerText = `-${estLoss.toLocaleString()}원 (${impact}%)`;
+    }
+
+    function openPBHandoffModal() {
+      playSound('click');
+      document.getElementById('pbModal').classList.add('open');
+    }
+
+    function closePbModal() {
+      playSound('click');
+      document.getElementById('pbModal').classList.remove('open');
+    }
+
+    function confirmPbHandoff() {
+      closePbModal();
+      playSound('success');
+      showToast('👔 전담 PB에게 고객 포트폴리오 요약이 전달되었습니다.');
+      addAgentTimeline('PB Handoff', '전담 PB에게 포트폴리오 편중(68.4%) 및 질문 이력 전달 완료', '상담 인계');
+    }
+
+    function triggerSimulatedSignalNow() {
+      playSound('click');
+      const banner = document.getElementById('pushNotificationBanner');
+      if (banner) banner.classList.remove('hidden');
+      showToast('⚡ [SIGNAL] DB하이텍 지지 반등 포착!');
+    }
+
+    function dismissPushBanner() {
+      const banner = document.getElementById('pushNotificationBanner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    function handlePushAction(action) {
+      dismissPushBanner();
+      if (action === 'chart') {
+        selectStockAndGoChart('DB하이텍');
+      } else {
+        openAmountOrderModal('DB하이텍', 1000000);
+      }
+    }
+
+    function handleIslandClick() {
+      triggerSimulatedSignalNow();
+    }
+
+    function closeAllSheets() {
+      ['amountOrderSheet', 'sellOrderSheet', 'whatIfSheet', 'rebalanceSheet', 'awayModeSheet', 'alertBuilderSheet', 'marketShockSheet', 'dividendSalarySheet'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('open');
+      });
+      document.getElementById('pbModal').classList.remove('open');
+      document.getElementById('agentBrainModal').classList.remove('open');
+      document.getElementById('blackSwanModal').classList.remove('open');
+      document.getElementById('mentalPacemakerModal').classList.remove('open');
+    }
+
+    function closeSheet(id) {
+      playSound('click');
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('open');
+    }
+
+    function renderHomeSignalFeed() {
+      const container = document.getElementById('homeSignalFeedContainer');
+      if (!container) return;
+      const feedItems = [
+        { time: '14:28:10', stock: 'DB하이텍', type: '20일선 지지 반등', change: '+4.44%', isUp: true },
+        { time: '14:15:22', stock: '티에스이', type: '신고가 돌파 임박', change: '+9.67%', isUp: true },
+        { time: '13:58:05', stock: 'KODEX 미국S&P500', type: '정기적립 골든구간', change: '+0.29%', isUp: true }
+      ];
+      container.innerHTML = feedItems.map(item => `
+        <div onclick="selectStockAndGoChart('${item.stock}')" class="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between cursor-pointer hover:border-blue-400 transition shadow-sm">
+          <div class="flex items-center gap-2">
+            <span class="w-1.5 h-6 rounded-full ${item.isUp ? 'bg-red-500' : 'bg-blue-500'}"></span>
+            <div>
+              <strong class="text-xs text-slate-900">${item.stock}</strong>
+              <span class="text-[10px] text-slate-500 ml-1">${item.type}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-mono font-bold ${item.isUp ? 'text-red-500' : 'text-blue-500'}">${item.change}</span>
+            <span class="text-[9px] text-slate-400 block">${item.time}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderHomeStockFeed();
+      renderHomeSignalFeed();
+      renderBalanceScreen();
+      renderAgentTimeline();
+      renderAgentMissions();
+
+      setInterval(() => {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        const clockEl = document.getElementById('statusBarClock');
+        if (clockEl) clockEl.innerText = `${h}:${m}`;
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
